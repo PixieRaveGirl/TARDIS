@@ -37,12 +37,14 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.material.Lever;
 
 /**
  *
@@ -109,6 +111,11 @@ public class TARDISJunkControlListener implements Listener {
                                 TARDISMessage.send(player, "JUNK_NOT_FOUND");
                                 return;
                             }
+                            BlockState state = block.getState();
+                            Lever lever = (Lever) state.getData();
+                            lever.setPowered(!lever.isPowered());
+                            state.setData(lever);
+                            state.update();
                             // destroy junk TARDIS
                             final TARDISMaterialisationData pdd = new TARDISMaterialisationData();
                             pdd.setPlayer(player);
@@ -202,6 +209,15 @@ public class TARDISJunkControlListener implements Listener {
             String line2 = s.getLine(2);
             String line3 = s.getLine(3);
             if (line1.isEmpty() || line2.isEmpty() || line3.isEmpty()) {
+                if (line1.isEmpty() && line2.isEmpty() && line3.isEmpty()) {
+                    // check location
+                    TARDISJunkLocation tjl = new TARDISJunkLocation(plugin);
+                    if (tjl.isNotHome()) {
+                        plugin.getGeneralKeeper().setJunkDestination(tjl.getHome());
+                        TARDISMessage.send(p, "JUNK_RETURN");
+                        return;
+                    }
+                }
                 TARDISMessage.send(p, "JUNK_LINES");
                 return;
             }

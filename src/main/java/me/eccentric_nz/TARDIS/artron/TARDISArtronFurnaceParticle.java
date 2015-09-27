@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 
 public class TARDISArtronFurnaceParticle {
 
@@ -23,7 +24,7 @@ public class TARDISArtronFurnaceParticle {
             @Override
             public void run() {
                 for (Block block : plugin.getGeneralKeeper().getArtronFurnaces()) {
-                    if (isArtronFurnace(block)) {
+                    if (block != null && isArtronFurnace(block)) {
                         TARDISEffectLibHelper.sendWaterParticle(block.getLocation());
                     }
                 }
@@ -51,6 +52,13 @@ public class TARDISArtronFurnaceParticle {
             return false;
         }
         Furnace furnace = (Furnace) b.getState();
-        return (furnace != null && furnace.getInventory().getTitle().equals("TARDIS Artron Furnace"));
+        if (furnace != null) {
+            Inventory inv = furnace.getInventory();
+            if (inv != null) {
+                String title = furnace.getInventory().getTitle();
+                return (title != null && title.equals("TARDIS Artron Furnace"));
+            }
+        }
+        return false;
     }
 }
