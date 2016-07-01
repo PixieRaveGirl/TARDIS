@@ -17,6 +17,8 @@
 package me.eccentric_nz.TARDIS.utility;
 
 import me.eccentric_nz.TARDIS.TARDIS;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -47,19 +49,35 @@ public class TARDISPerceptionFilter {
             perceptionFilter = board.registerNewTeam("PerceptionFilter");
             perceptionFilter.setCanSeeFriendlyInvisibles(true);
             for (Player olp : plugin.getServer().getOnlinePlayers()) {
-                perceptionFilter.addPlayer(olp);
+                perceptionFilter.addEntry(olp.getName());
             }
         }
     }
 
+    public static void removePerceptionFilter() {
+        Scoreboard board = Bukkit.getServer().getScoreboardManager().getMainScoreboard();
+        Team perceptionFilter = board.getTeam("PerceptionFilter");
+        if (perceptionFilter != null) {
+            for (OfflinePlayer olp : Bukkit.getServer().getOfflinePlayers()) {
+                if (olp != null) {
+                    String entry = olp.getName();
+                    if (perceptionFilter.hasEntry(entry)) {
+                        perceptionFilter.removeEntry(entry);
+                    }
+                }
+            }
+            perceptionFilter.unregister();
+        }
+    }
+
     public void addPerceptionFilter(Player player) {
-        perceptionFilter.addPlayer(player);
+        perceptionFilter.addEntry(player.getName());
         player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 15));
     }
 
     public void addPlayer(Player player) {
-        if (!perceptionFilter.hasPlayer(player)) {
-            perceptionFilter.addPlayer(player);
+        if (!perceptionFilter.hasEntry(player.getName())) {
+            perceptionFilter.addEntry(player.getName());
         }
     }
 

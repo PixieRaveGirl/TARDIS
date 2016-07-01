@@ -23,6 +23,7 @@ import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetControls;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Material;
 import org.bukkit.Rotation;
@@ -52,10 +53,8 @@ public class TARDISItemFrameListener implements Listener {
             // did they run the `/tardis update direction` command?
             if (plugin.getTrackerKeeper().getPlayers().containsKey(uuid) && plugin.getTrackerKeeper().getPlayers().get(uuid).equals("direction")) {
                 // check they have a TARDIS
-                HashMap<String, Object> wheret = new HashMap<String, Object>();
-                wheret.put("uuid", uuid.toString());
-                ResultSetTardis rst = new ResultSetTardis(plugin, wheret, "", false);
-                if (!rst.resultSet()) {
+                ResultSetTardisID rst = new ResultSetTardisID(plugin);
+                if (!rst.fromUUID(uuid.toString())) {
                     TARDISMessage.send(player, "NO_TARDIS");
                     return;
                 }
@@ -96,13 +95,13 @@ public class TARDISItemFrameListener implements Listener {
                 // prevent other players from stealing the tripwire hook
                 HashMap<String, Object> wherep = new HashMap<String, Object>();
                 wherep.put("tardis_id", id);
-                ResultSetTardis rso = new ResultSetTardis(plugin, wherep, "", false);
-                if (rso.resultSet() && !rso.getUuid().equals(uuid)) {
+                ResultSetTardis rso = new ResultSetTardis(plugin, wherep, "", false, 2);
+                if (rso.resultSet() && !rso.getTardis().getUuid().equals(uuid)) {
                     event.setCancelled(true);
                     return;
                 }
                 if (frame.getItem().getType().equals(Material.TRIPWIRE_HOOK)) {
-                    if (plugin.getConfig().getBoolean("allow.power_down") && !rso.isPowered_on()) {
+                    if (plugin.getConfig().getBoolean("allow.power_down") && !rso.getTardis().isPowered_on()) {
                         TARDISMessage.send(player, "POWER_DOWN");
                         return;
                     }
@@ -151,9 +150,8 @@ public class TARDISItemFrameListener implements Listener {
                         frame.setRotation(r);
                         TARDISMessage.send(player, "DIRECTON_SET", direction);
                     }
-                } else {
-                    // are they placing a tripwire hook?
-                    if (frame.getItem().getType().equals(Material.AIR) && player.getItemInHand().getType().equals(Material.TRIPWIRE_HOOK)) {
+                } else // are they placing a tripwire hook?
+                 if (frame.getItem().getType().equals(Material.AIR) && player.getInventory().getItemInMainHand().getType().equals(Material.TRIPWIRE_HOOK)) {
                         // get current tardis direction
                         HashMap<String, Object> wherec = new HashMap<String, Object>();
                         wherec.put("tardis_id", id);
@@ -184,7 +182,6 @@ public class TARDISItemFrameListener implements Listener {
                             }, 4L);
                         }
                     }
-                }
             }
         }
     }

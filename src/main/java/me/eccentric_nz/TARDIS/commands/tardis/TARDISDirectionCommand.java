@@ -18,14 +18,17 @@ package me.eccentric_nz.TARDIS.commands.tardis;
 
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.advanced.TARDISCircuitChecker;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetControls;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Chunk;
@@ -53,20 +56,22 @@ public class TARDISDirectionCommand {
                 TARDISMessage.send(player, "DIRECTION_NEED");
                 return false;
             }
+            UUID uuid = player.getUniqueId();
             HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            where.put("uuid", uuid.toString());
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (!rs.resultSet()) {
                 TARDISMessage.send(player, "NO_TARDIS");
                 return false;
             }
-            if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+            Tardis tardis = rs.getTardis();
+            if (plugin.getConfig().getBoolean("allow.power_down") && !tardis.isPowered_on()) {
                 TARDISMessage.send(player, "POWER_DOWN");
                 return true;
             }
-            int id = rs.getTardis_id();
+            int id = tardis.getTardis_id();
             TARDISCircuitChecker tcc = null;
-            if (plugin.getConfig().getString("preferences.difficulty").equals("hard") && !plugin.getUtils().inGracePeriod(player, true)) {
+            if (!plugin.getDifficulty().equals(DIFFICULTY.EASY) && !plugin.getUtils().inGracePeriod(player, true)) {
                 tcc = new TARDISCircuitChecker(plugin, id);
                 tcc.getCircuits();
             }
@@ -74,23 +79,31 @@ public class TARDISDirectionCommand {
                 TARDISMessage.send(player, "NO_MAT_CIRCUIT");
                 return true;
             }
-            int level = rs.getArtron_level();
+            int level = tardis.getArtron_level();
             int amount = plugin.getArtronConfig().getInt("random");
             if (level < amount) {
                 TARDISMessage.send(player, "ENERGY_NO_DIRECTION");
+                return true;
+            }
+            if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                TARDISMessage.send(player.getPlayer(), "NOT_IN_VORTEX");
                 return true;
             }
             if (plugin.getTrackerKeeper().getInVortex().contains(id)) {
                 TARDISMessage.send(player, "NOT_WHILE_MAT");
                 return true;
             }
+            if (plugin.getTrackerKeeper().getDispersedTARDII().contains(id)) {
+                TARDISMessage.send(player.getPlayer(), "NOT_WHILE_DISPERSED");
+                return true;
+            }
             boolean tmp_cham = false;
             if (plugin.getConfig().getBoolean("travel.chameleon")) {
-                tmp_cham = rs.isChamele_on();
+                tmp_cham = tardis.isChamele_on();
             }
             boolean cham = tmp_cham;
-            boolean hid = rs.isHidden();
-            PRESET demat = rs.getDemat();
+            boolean hid = tardis.isHidden();
+            PRESET demat = tardis.getDemat();
             String dir = args[1].toUpperCase(Locale.ENGLISH);
             HashMap<String, Object> wherecl = new HashMap<String, Object>();
             wherecl.put("tardis_id", id);
@@ -122,23 +135,29 @@ public class TARDISDirectionCommand {
                 if (demat.equals(PRESET.MINESHAFT)) {
                     plugin.getPresetDestroyer().destroyMineshaftTorches(l, old_d);
                 }
+                if (demat.equals(PRESET.LAMP)) {
+                    plugin.getPresetDestroyer().destroyLampTrapdoors(l, old_d);
+                }
+                if (demat.equals(PRESET.JUNK_MODE)) {
+                    plugin.getPresetDestroyer().destroyHandbrake(l, old_d);
+                }
                 plugin.getPresetDestroyer().destroyDoor(id);
                 plugin.getPresetDestroyer().destroySign(l, old_d, demat);
-                final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-                pbd.setChameleon(cham);
-                pbd.setDirection(d);
-                pbd.setLocation(l);
-                pbd.setMalfunction(false);
-                pbd.setOutside(false);
-                pbd.setPlayer(player);
-                pbd.setRebuild(true);
-                pbd.setSubmarine(rsc.isSubmarine());
-                pbd.setTardisID(id);
-                pbd.setBiome(rsc.getBiome());
+                final BuildData bd = new BuildData(plugin, uuid.toString());
+                bd.setChameleon(cham);
+                bd.setDirection(d);
+                bd.setLocation(l);
+                bd.setMalfunction(false);
+                bd.setOutside(false);
+                bd.setPlayer(player);
+                bd.setRebuild(true);
+                bd.setSubmarine(rsc.isSubmarine());
+                bd.setTardisID(id);
+                bd.setBiome(rsc.getBiome());
                 plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
-                        plugin.getPresetBuilder().buildPreset(pbd);
+                        plugin.getPresetBuilder().buildPreset(bd);
                     }
                 }, 10L);
             }

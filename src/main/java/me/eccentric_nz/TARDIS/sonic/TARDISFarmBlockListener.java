@@ -17,6 +17,7 @@ public class TARDISFarmBlockListener implements Listener {
     public final TARDIS plugin;
     // seeds
     private final Material air = Material.AIR;
+    private final Material bs = Material.BEETROOT_SEEDS;
     private final Material ci = Material.CARROT_ITEM;
     private final Material is = Material.INK_SACK;
     private final Material ms = Material.MELON_SEEDS;
@@ -40,14 +41,19 @@ public class TARDISFarmBlockListener implements Listener {
         if (!player.hasPermission("tardis.sonic.plant")) {
             return;
         }
-        ItemStack stack = player.getItemInHand();
+        ItemStack stack = player.getInventory().getItemInMainHand();
         if (stack.getType().equals(sonic) && stack.hasItemMeta()) {
-            ItemMeta im = player.getItemInHand().getItemMeta();
+            ItemMeta im = stack.getItemMeta();
             if (im.hasDisplayName() && ChatColor.stripColor(im.getDisplayName()).equals("Sonic Screwdriver") && im.hasLore() && im.getLore().contains("Emerald Upgrade")) {
                 Block block = event.getBlock();
                 Material type = block.getType();
                 Byte data = block.getData();
                 switch (block.getType()) {
+                    case BEETROOT_BLOCK:
+                        if (data == 3 && player.getInventory().contains(bs)) {
+                            processHarvest(player, bs, block);
+                        }
+                        break;
                     case CARROT:
                         if (data == 7 && player.getInventory().contains(ci)) {
                             processHarvest(player, ci, block);

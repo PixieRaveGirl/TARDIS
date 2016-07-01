@@ -53,6 +53,7 @@ public class TARDISRenderRoomListener implements Listener {
             if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) || event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
                 // tp the player back to the TARDIS console
                 transmat(player);
+                player.updateInventory();
             }
         }
     }
@@ -108,7 +109,7 @@ public class TARDISRenderRoomListener implements Listener {
                 plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
-                        p.playSound(tp_loc, Sound.ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                        p.playSound(tp_loc, Sound.ENTITY_ENDERMEN_TELEPORT, 1.0f, 1.0f);
                         p.teleport(tp_loc);
                         plugin.getTrackerKeeper().getRenderRoomOccupants().remove(p.getUniqueId());
                         if (plugin.getTrackerKeeper().getRenderedNPCs().containsKey(p.getUniqueId()) && plugin.getPM().isPluginEnabled("Citizens")) {

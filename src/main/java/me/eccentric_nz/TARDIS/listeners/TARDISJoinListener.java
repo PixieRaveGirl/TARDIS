@@ -27,6 +27,8 @@ import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.utility.TARDISResourcePackChanger;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -103,7 +105,7 @@ public class TARDISJoinListener implements Listener {
                 }
             }
         }
-        if (plugin.getConfig().getString("preferences.difficulty").equals("hard") && ((plugin.getConfig().getBoolean("allow.player_difficulty") && player.hasPermission("tardis.difficulty")) || (plugin.getConfig().getInt("travel.grace_period") > 0 && player.hasPermission("tardis.create")))) {
+        if (!plugin.getDifficulty().equals(DIFFICULTY.EASY) && ((plugin.getConfig().getBoolean("allow.player_difficulty") && player.hasPermission("tardis.difficulty")) || (plugin.getConfig().getInt("travel.grace_period") > 0 && player.hasPermission("tardis.create")))) {
             // check if they have t_count record - create one if not
             HashMap<String, Object> wherec = new HashMap<String, Object>();
             wherec.put("uuid", uuid);
@@ -140,11 +142,12 @@ public class TARDISJoinListener implements Listener {
         // load and remember the players Police Box chunk
         HashMap<String, Object> wherep = new HashMap<String, Object>();
         wherep.put("uuid", player.getUniqueId().toString());
-        ResultSetTardis rs = new ResultSetTardis(plugin, wherep, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, wherep, "", false, 0);
         if (rs.resultSet()) {
-            int id = rs.getTardis_id();
-            String owner = rs.getOwner();
-            String last_known_name = rs.getLastKnownName();
+            Tardis tardis = rs.getTardis();
+            int id = tardis.getTardis_id();
+            String owner = tardis.getOwner();
+            String last_known_name = tardis.getLastKnownName();
             HashMap<String, Object> wherecl = new HashMap<String, Object>();
             wherecl.put("tardis_id", id);
             ResultSetCurrentLocation rsc = new ResultSetCurrentLocation(plugin, wherecl);
@@ -166,10 +169,11 @@ public class TARDISJoinListener implements Listener {
             }
             HashMap<String, Object> set = new HashMap<String, Object>();
             set.put("lastuse", now);
+            set.put("monsters", 0);
             if (!last_known_name.equals(player.getName())) {
                 // update the player's name WG region as it may have changed
                 if (plugin.isWorldGuardOnServer() && plugin.getConfig().getBoolean("preferences.use_worldguard")) {
-                    String[] chunkworld = rs.getChunk().split(":");
+                    String[] chunkworld = tardis.getChunk().split(":");
                     World cw = plugin.getServer().getWorld(chunkworld[0]);
                     // tardis region
                     plugin.getWorldGuardUtils().updateRegionForNameChange(cw, owner, player.getUniqueId(), "tardis");

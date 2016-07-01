@@ -23,7 +23,8 @@ import java.util.Locale;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisArtron;
+import me.eccentric_nz.TARDIS.enumeration.INVENTORY_MANAGER;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
 import org.bukkit.command.Command;
@@ -70,7 +71,7 @@ public class TARDISArtronStorageCommand implements CommandExecutor {
                 TARDISMessage.send(sender, "CMD_PLAYER");
                 return true;
             }
-            ItemStack is = player.getItemInHand();
+            ItemStack is = player.getInventory().getItemInMainHand();
             if (is == null || !is.hasItemMeta()) {
                 TARDISMessage.send(player, "CELL_IN_HAND");
                 return true;
@@ -93,16 +94,15 @@ public class TARDISArtronStorageCommand implements CommandExecutor {
             // must be a timelord
             String playerUUID = player.getUniqueId().toString();
             int current_level;
-            HashMap<String, Object> wheret = new HashMap<String, Object>();
             if (which.equals("tardis")) {
-                wheret.put("uuid", playerUUID);
-                ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
-                if (!rs.resultSet()) {
+                ResultSetTardisArtron rs = new ResultSetTardisArtron(plugin);
+                if (!rs.fromUUID(playerUUID)) {
                     TARDISMessage.send(player, "NO_TARDIS");
                     return true;
                 }
                 current_level = rs.getArtron_level();
             } else {
+                HashMap<String, Object> wheret = new HashMap<String, Object>();
                 wheret.put("uuid", playerUUID);
                 ResultSetPlayerPrefs rs = new ResultSetPlayerPrefs(plugin, wheret);
                 if (!rs.resultSet()) {
@@ -128,11 +128,9 @@ public class TARDISArtronStorageCommand implements CommandExecutor {
                     TARDISMessage.send(player, "CELL_NO_TRANSFER");
                     return true;
                 }
-            } else {
-                if (current_level - amount < 0) {
-                    TARDISMessage.send(player, "CELL_NOT_ENOUGH");
-                    return true;
-                }
+            } else if (current_level - amount < 0) {
+                TARDISMessage.send(player, "CELL_NOT_ENOUGH");
+                return true;
             }
             List<String> lore = im.getLore();
             int level = TARDISNumberParsers.parseInt(lore.get(1));
@@ -145,7 +143,7 @@ public class TARDISArtronStorageCommand implements CommandExecutor {
             lore.set(1, "" + new_amount);
             im.setLore(lore);
             im.addEnchant(Enchantment.DURABILITY, 1, true);
-            if (!plugin.getPM().isPluginEnabled("Multiverse-Inventories")) {
+            if (!plugin.getInvManager().equals(INVENTORY_MANAGER.MULTIVERSE)) {
                 im.addItemFlags(ItemFlag.values());
             }
             is.setItemMeta(im);

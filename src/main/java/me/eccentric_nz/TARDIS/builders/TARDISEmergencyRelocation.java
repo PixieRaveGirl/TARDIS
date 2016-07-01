@@ -20,6 +20,7 @@ import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.travel.TARDISTimeTravel;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -44,19 +45,21 @@ public class TARDISEmergencyRelocation {
         // get the TARDIS
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", id);
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
         if (rs.resultSet()) {
             // get the servers main world
             World w = plugin.getServer().getWorlds().get(0);
             Location emergency = new TARDISTimeTravel(plugin).randomDestination(p, (byte) 15, (byte) 15, (byte) 15, COMPASS.EAST, "THIS", w, false, w.getSpawnLocation());
             if (emergency != null) {
-                TARDISMaterialisationData tmd = new TARDISMaterialisationData();
-                tmd.setLocation(emergency);
-                tmd.setTardisID(id);
-                tmd.setDirection(COMPASS.EAST);
-                tmd.setMalfunction(false);
-                tmd.setSubmarine(false);
-                new TARDISInstaPreset(plugin, tmd, rs.getPreset(), 50, rs.getChameleon_id(), rs.getChameleon_data(), false, false, false, true).buildPreset();
+                BuildData bd = new BuildData(plugin, p.getUniqueId().toString());
+                bd.setLocation(emergency);
+                bd.setTardisID(id);
+                bd.setDirection(COMPASS.EAST);
+                bd.setMalfunction(false);
+                bd.setSubmarine(false);
+                // TODO get player preferences
+                Tardis tardis = rs.getTardis();
+                new TARDISInstaPreset(plugin, bd, tardis.getPreset(), tardis.getChameleon_id(), tardis.getChameleon_data(), false).buildPreset();
                 QueryFactory qf = new QueryFactory(plugin);
                 HashMap<String, Object> wherec = new HashMap<String, Object>();
                 wherec.put("tardis_id", id);

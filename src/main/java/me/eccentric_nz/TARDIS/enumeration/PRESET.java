@@ -32,6 +32,7 @@ public enum PRESET {
     CAKE(Material.CAKE, "CAKE AND", "EAT IT TOO", true, true),
     CANDY(Material.SUGAR, "", "", false, false),
     CHALICE(Material.QUARTZ, "", "", false, false),
+    CHORUS(Material.CHORUS_FLOWER, "", "", true, true),
     CREEPY(Material.STRING, "HAUNTED", "HOUSE", true, true),
     DESERT(Material.SAND, "", "", true, true),
     DIORITE(Material.EMERALD, "DIORITE", "BOX", true, true),
@@ -78,6 +79,7 @@ public enum PRESET {
     YELLOW(Material.GOLD_NUGGET, "YELLOW", "SUBMARINE", true, true),
     CUSTOM(Material.OBSIDIAN, "", "", false, false),
     JUNK(Material.BARRIER, "", "", false, false),
+    JUNK_MODE(Material.BARRIER, "", "", false, false),
     CONSTRUCT(Material.BARRIER, "CONSTRUCT", "", true, true);
 
     Material material;

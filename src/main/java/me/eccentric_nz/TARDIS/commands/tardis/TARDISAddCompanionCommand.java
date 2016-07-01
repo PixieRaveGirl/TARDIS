@@ -21,12 +21,16 @@ import java.util.Locale;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.achievement.TARDISAchievementFactory;
+import me.eccentric_nz.TARDIS.companionGUI.TARDISCompanionAddInventory;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 /**
  *
@@ -40,11 +44,23 @@ public class TARDISAddCompanionCommand {
         this.plugin = plugin;
     }
 
+    public boolean doAddGUI(Player player) {
+        if (player.hasPermission("tardis.add")) {
+            ItemStack[] items = new TARDISCompanionAddInventory(plugin, player.getUniqueId()).getPlayers();
+            Inventory presetinv = plugin.getServer().createInventory(player, 54, "§4Add Companion");
+            presetinv.setContents(items);
+            player.openInventory(presetinv);
+        } else {
+            TARDISMessage.send(player, "NO_PERMS");
+        }
+        return true;
+    }
+
     public boolean doAdd(Player player, String[] args) {
         if (player.hasPermission("tardis.add")) {
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             String comps;
             int id;
             String[] data;
@@ -53,10 +69,11 @@ public class TARDISAddCompanionCommand {
                 TARDISMessage.send(player, "NO_TARDIS");
                 return true;
             } else {
-                id = rs.getTardis_id();
-                comps = rs.getCompanions();
-                data = rs.getChunk().split(":");
-                owner = rs.getOwner();
+                Tardis tardis = rs.getTardis();
+                id = tardis.getTardis_id();
+                comps = tardis.getCompanions();
+                data = tardis.getChunk().split(":");
+                owner = tardis.getOwner();
             }
             if (args.length < 2) {
                 TARDISMessage.send(player, "TOO_FEW_ARGS");
@@ -67,10 +84,10 @@ public class TARDISAddCompanionCommand {
                 return true;
             } else {
                 UUID oluuid = plugin.getServer().getOfflinePlayer(args[1]).getUniqueId();
-                if (oluuid == null) {
-                    oluuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(args[1]);
-                    plugin.getGeneralKeeper().getUUIDCache().getId(args[1]);
-                }
+//                if (oluuid == null) {
+//                    oluuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(args[1]);
+//                    plugin.getGeneralKeeper().getUUIDCache().getId(args[1]);
+//                }
                 if (oluuid != null) {
                     QueryFactory qf = new QueryFactory(plugin);
                     HashMap<String, Object> tid = new HashMap<String, Object>();

@@ -22,6 +22,8 @@ import me.eccentric_nz.TARDIS.advanced.TARDISCircuitChecker;
 import me.eccentric_nz.TARDIS.chameleon.TARDISChameleonCircuit;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
 import org.bukkit.ChatColor;
@@ -57,14 +59,15 @@ public class TARDISChameleonCommand {
             // get the players TARDIS id
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (!rs.resultSet()) {
                 TARDISMessage.send(player, "NO_TARDIS");
                 return false;
             }
-            int id = rs.getTardis_id();
+            Tardis tardis = rs.getTardis();
+            int id = tardis.getTardis_id();
             TARDISCircuitChecker circ_chk = null;
-            if (plugin.getConfig().getString("preferences.difficulty").equals("hard") && !plugin.getUtils().inGracePeriod(player, false)) {
+            if (!plugin.getDifficulty().equals(DIFFICULTY.EASY) && !plugin.getUtils().inGracePeriod(player, false)) {
                 circ_chk = new TARDISCircuitChecker(plugin, id);
                 circ_chk.getCircuits();
             }
@@ -72,7 +75,7 @@ public class TARDISChameleonCommand {
                 TARDISMessage.send(player, "CHAM_MISSING");
                 return true;
             }
-            String chamStr = rs.getChameleon();
+            String chamStr = tardis.getChameleon();
             if (chamStr.isEmpty()) {
                 TARDISMessage.send(player, "CHAM_NOT_FOUND");
                 return false;
@@ -118,7 +121,7 @@ public class TARDISChameleonCommand {
                     set.put("chameleon_id", c_id);
                     set.put("chameleon_data", c_data);
                     qf.doUpdate("tardis", set, tid);
-                    boolean bluewool = (c_id == dwid && c_data == (byte) dwd);
+                    boolean bluewool = (c_id == dwid && c_data == dwd);
                     if (!bluewool) {
                         TARDISMessage.send(player, "CHAM_SET", target_block.getType().toString());
                     }

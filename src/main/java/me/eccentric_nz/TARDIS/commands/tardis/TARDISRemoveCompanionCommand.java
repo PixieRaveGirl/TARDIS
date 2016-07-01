@@ -22,6 +22,7 @@ import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -42,7 +43,7 @@ public class TARDISRemoveCompanionCommand {
         if (player.hasPermission("tardis.add")) {
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             String comps;
             int id;
             String[] data;
@@ -51,14 +52,15 @@ public class TARDISRemoveCompanionCommand {
                 TARDISMessage.send(player, "NO_TARDIS");
                 return false;
             } else {
-                comps = rs.getCompanions();
+                Tardis tardis = rs.getTardis();
+                comps = tardis.getCompanions();
                 if (comps == null || comps.isEmpty()) {
                     TARDISMessage.send(player, "COMPANIONS_NONE");
                     return true;
                 }
-                id = rs.getTardis_id();
-                data = rs.getChunk().split(":");
-                owner = rs.getOwner();
+                id = tardis.getTardis_id();
+                data = tardis.getChunk().split(":");
+                owner = tardis.getOwner();
             }
             if (args.length < 2) {
                 TARDISMessage.send(player, "TOO_FEW_ARGS");
@@ -72,10 +74,10 @@ public class TARDISRemoveCompanionCommand {
                 String message = "COMPANIONS_REMOVE_ALL";
                 if (!args[1].equals("all")) {
                     UUID oluuid = plugin.getServer().getOfflinePlayer(args[1]).getUniqueId();
-                    if (oluuid == null) {
-                        oluuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(args[1]);
-                        plugin.getGeneralKeeper().getUUIDCache().getId(args[1]);
-                    }
+//                    if (oluuid == null) {
+//                        oluuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(args[1]);
+//                        plugin.getGeneralKeeper().getUUIDCache().getId(args[1]);
+//                    }
                     if (oluuid != null) {
                         String[] split = comps.split(":");
                         StringBuilder buf = new StringBuilder();

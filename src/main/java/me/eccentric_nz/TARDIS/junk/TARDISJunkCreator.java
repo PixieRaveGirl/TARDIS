@@ -18,11 +18,13 @@ package me.eccentric_nz.TARDIS.junk;
 
 import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
+import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.enumeration.SCHEMATIC;
+import me.eccentric_nz.TARDIS.rooms.TARDISWalls;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -55,7 +57,7 @@ public class TARDISJunkCreator {
         // check if there is a junk TARDIS already
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("uuid", "00000000-aaaa-bbbb-cccc-000000000000");
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 2);
         if (rs.resultSet()) {
             TARDISMessage.send(p, "JUNK_EXISTS");
             return true;
@@ -80,6 +82,32 @@ public class TARDISJunkCreator {
         set.put("chameleon_data", 11);
         set.put("lastuse", System.currentTimeMillis());
         final int lastInsertId = qf.doSyncInsert("tardis", set);
+        // get wall floor prefs
+        Material wall_type = Material.WOOL;
+        byte wall_data = 1;
+        Material floor_type = Material.WOOL;
+        byte floor_data = 7;
+        // check if player_prefs record
+        HashMap<String, Object> wherepp = new HashMap<String, Object>();
+        wherepp.put("uuid", "00000000-aaaa-bbbb-cccc-000000000000");
+        ResultSetPlayerPrefs rsp = new ResultSetPlayerPrefs(plugin, wherepp);
+        if (rsp.resultSet()) {
+            TARDISWalls.Pair fid_data = plugin.getTardisWalls().blocks.get(rsp.getFloor());
+            floor_type = fid_data.getType();
+            floor_data = fid_data.getData();
+            TARDISWalls.Pair wid_data = plugin.getTardisWalls().blocks.get(rsp.getWall());
+            wall_type = wid_data.getType();
+            wall_data = wid_data.getData();
+        } else {
+            // create a player_prefs record
+            HashMap<String, Object> setpp = new HashMap<String, Object>();
+            setpp.put("uuid", "00000000-aaaa-bbbb-cccc-000000000000");
+            setpp.put("player", "junk");
+            setpp.put("wall", "ORANGE_WOOL");
+            setpp.put("floor", "GREY_WOOL");
+            setpp.put("lamp", "REDSTONE_LAMP_OFF");
+            qf.doInsert("player_prefs", setpp);
+        }
         World chunkworld = plugin.getServer().getWorld(cw);
         // populate home, current, next and back tables
         HashMap<String, Object> setlocs = new HashMap<String, Object>();
@@ -91,24 +119,24 @@ public class TARDISJunkCreator {
         setlocs.put("direction", "SOUTH");
         qf.insertLocations(setlocs, l.getBlock().getBiome().toString(), lastInsertId);
         // build the TARDIS at the location
-        final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-        pbd.setChameleon(false);
-        pbd.setDirection(COMPASS.SOUTH);
-        pbd.setLocation(l);
-        pbd.setMalfunction(false);
-        pbd.setOutside(true);
-        pbd.setPlayer(p);
-        pbd.setRebuild(false);
-        pbd.setSubmarine(false);
-        pbd.setTardisID(lastInsertId);
-        pbd.setBiome(l.getBlock().getBiome());
+        final BuildData bd = new BuildData(plugin, "00000000-aaaa-bbbb-cccc-000000000000");
+        bd.setChameleon(false);
+        bd.setDirection(COMPASS.SOUTH);
+        bd.setLocation(l);
+        bd.setMalfunction(false);
+        bd.setOutside(true);
+        bd.setPlayer(p);
+        bd.setRebuild(false);
+        bd.setSubmarine(false);
+        bd.setTardisID(lastInsertId);
+        bd.setBiome(l.getBlock().getBiome());
         // build the TARDIS in the Vortex
-        plugin.getInteriorBuilder().buildInner(junk, chunkworld, lastInsertId, p, Material.WOOL, (byte) 1, Material.WOOL, (byte) 7, true);
+        plugin.getInteriorBuilder().buildInner(junk, chunkworld, lastInsertId, p, wall_type, wall_data, floor_type, floor_data, true);
         // build the TARDIS in the world
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
             @Override
             public void run() {
-                plugin.getPresetBuilder().buildPreset(pbd);
+                plugin.getPresetBuilder().buildPreset(bd);
             }
         }, 5L);
         return true;

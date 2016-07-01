@@ -30,8 +30,10 @@ upgrades:
     ars: 5000
     bigger: 7500
     budget: 5000
+    coral: 8000
     deluxe: 10000
     eleventh: 10000
+    ender: 5000
     master: 10000
     plank: 5000
     pyramid: 5000
@@ -49,3 +51,12 @@ artron_furnace:
     cook_time: 0.5
     set_biome: true
     particles: true
+# Sonic Generator costs (as a percentage of full charge)
+sonic_generator:
+    standard: 10
+    bio: 10
+    diamond: 10
+    emerald: 10
+    redstone: 10
+    painter: 10
+    ignite: 10

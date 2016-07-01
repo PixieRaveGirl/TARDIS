@@ -20,19 +20,26 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import me.eccentric_nz.TARDIS.TARDIS;
+import static me.eccentric_nz.TARDIS.commands.tardis.TARDISAbandonCommand.getSign;
 import me.eccentric_nz.TARDIS.control.TARDISPowerButton;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetControls;
+import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
+import me.eccentric_nz.TARDIS.move.TARDISDoorCloser;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
 import me.eccentric_nz.TARDIS.utility.TARDISSounds;
+import multiworld.MultiWorldPlugin;
+import multiworld.api.MultiWorldAPI;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
@@ -43,6 +50,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -81,6 +89,9 @@ public class TARDISArtronCapacitorListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCapacitorInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         final Player player = event.getPlayer();
         Block block = event.getClickedBlock();
         if (block != null) {
@@ -100,18 +111,20 @@ public class TARDISArtronCapacitorListener implements Listener {
                         final int id = rsc.getTardis_id();
                         HashMap<String, Object> wheret = new HashMap<String, Object>();
                         wheret.put("tardis_id", id);
-                        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
+                        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false, 2);
                         if (rs.resultSet()) {
-                            if (rs.getPreset().equals(PRESET.JUNK)) {
+                            Tardis tardis = rs.getTardis();
+                            if (tardis.getPreset().equals(PRESET.JUNK)) {
                                 return;
                             }
+                            final boolean abandoned = tardis.isAbandoned();
                             HashMap<String, Object> whereid = new HashMap<String, Object>();
                             whereid.put("tardis_id", id);
-                            int current_level = rs.getArtron_level();
-                            boolean init = rs.isTardis_init();
-                            boolean lights = rs.isLights_on();
+                            int current_level = tardis.getArtron_level();
+                            boolean init = tardis.isTardis_init();
+                            boolean lights = tardis.isLights_on();
                             int fc = plugin.getArtronConfig().getInt("full_charge");
-                            Material item = player.getItemInHand().getType();
+                            Material item = player.getInventory().getItemInMainHand().getType();
                             Material full = Material.valueOf(plugin.getArtronConfig().getString("full_charge_item"));
                             Material cell = Material.valueOf(plugin.getRecipesConfig().getString("shaped.Artron Storage Cell.result"));
                             QueryFactory qf = new QueryFactory(plugin);
@@ -134,14 +147,27 @@ public class TARDISArtronCapacitorListener implements Listener {
                                 }
                                 int amount = 0;
                                 if (item.equals(full)) {
+                                    if (plugin.getConfig().getBoolean("preferences.no_creative_condense")) {
+                                        if (plugin.isMVOnServer() && !plugin.getMVHelper().isWorldSurvival(block.getLocation().getWorld())) {
+                                            TARDISMessage.send(player, "ARTRON_FULL_CREATIVE");
+                                            return;
+                                        }
+                                        if (plugin.getPM().isPluginEnabled("MultiWorld")) {
+                                            MultiWorldAPI multiworld = ((MultiWorldPlugin) plugin.getPM().getPlugin("MultiWorld")).getApi();
+                                            if (multiworld.isCreativeWorld(block.getLocation().getWorld().getName())) {
+                                                TARDISMessage.send(player, "ARTRON_FULL_CREATIVE");
+                                                return;
+                                            }
+                                        }
+                                    }
                                     // remove the NETHER_STAR! (if appropriate)
-                                    int a = player.getInventory().getItemInHand().getAmount();
+                                    int a = player.getInventory().getItemInMainHand().getAmount();
                                     int a2 = a - 1;
                                     if (current_level < fc) {
                                         // There's room in the tank!
                                         amount = fc;
                                         if (a2 > 0) {
-                                            player.getInventory().getItemInHand().setAmount(a2);
+                                            player.getInventory().getItemInMainHand().setAmount(a2);
                                         } else {
                                             player.getInventory().removeItem(new ItemStack(full, 1));
                                         }
@@ -152,7 +178,7 @@ public class TARDISArtronCapacitorListener implements Listener {
                                         TARDISMessage.send(player, "ENERGY_MAX");
                                     }
                                 } else {
-                                    ItemStack is = player.getItemInHand();
+                                    ItemStack is = player.getInventory().getItemInMainHand();
                                     if (is.hasItemMeta()) {
                                         ItemMeta im = is.getItemMeta();
                                         String name = im.getDisplayName();
@@ -184,10 +210,10 @@ public class TARDISArtronCapacitorListener implements Listener {
                                 // has the TARDIS been initialised?
                                 if (!init) {
                                     // kickstart the TARDIS Artron Energy Capacitor
-                                    TARDISSounds.playTARDISSound(block.getLocation(), player, "power_up");
+                                    TARDISSounds.playTARDISSound(block.getLocation(), "power_up");
                                     // get locations from database
-                                    String creeper = rs.getCreeper();
-                                    String beacon = rs.getBeacon();
+                                    String creeper = tardis.getCreeper();
+                                    String beacon = tardis.getBeacon();
                                     if (!creeper.isEmpty() && !creeper.equals(":")) {
                                         String[] creeperData = creeper.split(":");
                                         String[] beaconData = beacon.split(":");
@@ -219,10 +245,53 @@ public class TARDISArtronCapacitorListener implements Listener {
                                     set.put("powered_on", 1);
                                     qf.doUpdate("tardis", set, whereid);
                                     TARDISMessage.send(player, "ENERGY_INIT");
-                                } else {
-                                    // toggle power
+                                } else // toggle power
+                                {
                                     if (plugin.getConfig().getBoolean("allow.power_down")) {
-                                        new TARDISPowerButton(plugin, id, player, rs.getPreset(), rs.isPowered_on(), rs.isHidden(), lights, player.getLocation(), current_level, rs.getSchematic().hasLanterns()).clickButton();
+                                        boolean pu = true;
+                                        if (abandoned) {
+                                            // transfer ownership to the player who clicked
+                                            pu = qf.claimTARDIS(player, id);
+                                            if (pu) {
+                                                new TARDISDoorCloser(plugin, player.getUniqueId(), id).closeDoors();
+                                                TARDISMessage.send(player, "ABANDON_CLAIMED");
+                                            }
+                                            if (plugin.getConfig().getBoolean("police_box.name_tardis")) {
+                                                HashMap<String, Object> wherec = new HashMap<String, Object>();
+                                                wherec.put("tardis_id", id);
+                                                ResultSetCurrentLocation rscl = new ResultSetCurrentLocation(plugin, wherec);
+                                                if (rsc.resultSet()) {
+                                                    PRESET preset = rs.getTardis().getPreset();
+                                                    Location current = new Location(rscl.getWorld(), rscl.getX(), rscl.getY(), rscl.getZ());
+                                                    Sign sign = getSign(current, rscl.getDirection(), preset);
+                                                    if (sign != null) {
+                                                        String player_name = player.getName();
+                                                        String owner;
+                                                        if (preset.equals(PRESET.GRAVESTONE) || preset.equals(PRESET.PUNKED) || preset.equals(PRESET.ROBOT)) {
+                                                            owner = (player_name.length() > 14) ? player_name.substring(0, 14) : player_name;
+                                                        } else {
+                                                            owner = (player_name.length() > 14) ? player_name.substring(0, 12) + "'s" : player_name + "'s";
+                                                        }
+                                                        switch (preset) {
+                                                            case GRAVESTONE:
+                                                                sign.setLine(3, owner);
+                                                                break;
+                                                            case ANGEL:
+                                                            case JAIL:
+                                                                sign.setLine(2, owner);
+                                                                break;
+                                                            default:
+                                                                sign.setLine(0, owner);
+                                                                break;
+                                                        }
+                                                        sign.update();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        if (pu) {
+                                            new TARDISPowerButton(plugin, id, player, tardis.getPreset(), tardis.isPowered_on(), tardis.isHidden(), lights, player.getLocation(), current_level, tardis.getSchematic().hasLanterns()).clickButton();
+                                        }
                                     }
                                 }
                             } else if (player.isSneaking()) {

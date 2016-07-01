@@ -25,7 +25,10 @@ import me.eccentric_nz.TARDIS.achievement.TARDISAchievementFactory;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCondenser;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
+import multiworld.MultiWorldPlugin;
+import multiworld.api.MultiWorldAPI;
 import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -38,6 +41,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -82,20 +86,33 @@ public class TARDISCondenserListener implements Listener {
                 boolean isCondenser;
                 HashMap<String, Object> where = new HashMap<String, Object>();
                 if (title.equals("§4Artron Condenser")) {
+                    if (plugin.getConfig().getBoolean("preferences.no_creative_condense")) {
+                        if (plugin.isMVOnServer() && !plugin.getMVHelper().isWorldSurvival(loc.getWorld())) {
+                            TARDISMessage.send(player, "CONDENSE_NO_CREATIVE");
+                            return;
+                        }
+                        if (plugin.getPM().isPluginEnabled("MultiWorld")) {
+                            MultiWorldAPI multiworld = ((MultiWorldPlugin) plugin.getPM().getPlugin("MultiWorld")).getApi();
+                            if (multiworld.isCreativeWorld(loc.getWorld().getName())) {
+                                TARDISMessage.send(player, "CONDENSE_NO_CREATIVE");
+                                return;
+                            }
+                        }
+                    }
                     chest_loc = loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY() + ":" + loc.getBlockZ();
                     where.put("condenser", chest_loc);
-                    rs = new ResultSetTardis(plugin, where, "", false);
+                    rs = new ResultSetTardis(plugin, where, "", false, 0);
                     isCondenser = rs.resultSet();
                 } else {
                     chest_loc = loc.toString();
                     where.put("uuid", player.getUniqueId().toString());
-                    rs = new ResultSetTardis(plugin, where, "", false);
+                    rs = new ResultSetTardis(plugin, where, "", false, 0);
                     isCondenser = (plugin.getArtronConfig().contains("condenser") && plugin.getArtronConfig().getString("condenser").equals(chest_loc) && rs.resultSet());
                 }
                 if (isCondenser) {
                     try {
                         Class.forName("org.bukkit.Sound");
-                        player.playSound(player.getLocation(), Sound.CHEST_CLOSE, 1, 1);
+                        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 1, 1);
                     } catch (ClassNotFoundException e) {
                         loc.getWorld().playEffect(loc, Effect.CLICK2, 0);
                     }
@@ -126,20 +143,21 @@ public class TARDISCondenserListener implements Listener {
                             }
                         }
                     }
+                    Tardis tardis = rs.getTardis();
                     // process item_counts
                     if (plugin.getConfig().getBoolean("growth.rooms_require_blocks")) {
                         for (Map.Entry<String, Integer> map : item_counts.entrySet()) {
                             // check if the tardis has condensed this material before
                             HashMap<String, Object> wherec = new HashMap<String, Object>();
-                            wherec.put("tardis_id", rs.getTardis_id());
+                            wherec.put("tardis_id", tardis.getTardis_id());
                             wherec.put("block_data", map.getKey());
-                            ResultSetCondenser rsc = new ResultSetCondenser(plugin, wherec, false);
+                            ResultSetCondenser rsc = new ResultSetCondenser(plugin, wherec);
                             HashMap<String, Object> setc = new HashMap<String, Object>();
                             if (rsc.resultSet()) {
                                 int new_stack_size = (int) map.getValue() + rsc.getBlock_count();
-                                qf.updateCondensedBlockCount(new_stack_size, rs.getTardis_id(), map.getKey());
+                                qf.updateCondensedBlockCount(new_stack_size, tardis.getTardis_id(), map.getKey());
                             } else {
-                                setc.put("tardis_id", rs.getTardis_id());
+                                setc.put("tardis_id", tardis.getTardis_id());
                                 setc.put("block_data", map.getKey());
                                 setc.put("block_count", (int) map.getValue());
                                 qf.doInsert("condenser", setc);
@@ -149,13 +167,13 @@ public class TARDISCondenserListener implements Listener {
                     // halve it cause 1:1 is too much...
                     amount = Math.round(amount / 2.0F);
                     HashMap<String, Object> wheret = new HashMap<String, Object>();
-                    wheret.put("tardis_id", rs.getTardis_id());
+                    wheret.put("tardis_id", tardis.getTardis_id());
                     qf.alterEnergyLevel("tardis", amount, wheret, player);
                     if (amount > 0) {
                         // are we doing an achievement?
                         if (plugin.getAchievementConfig().getBoolean("energy.enabled")) {
                             // determine the current percentage
-                            int current_level = rs.getArtron_level() + amount;
+                            int current_level = tardis.getArtron_level() + amount;
                             int fc = plugin.getArtronConfig().getInt("full_charge");
                             int percent = Math.round((current_level * 100F) / fc);
                             TARDISAchievementFactory taf = new TARDISAchievementFactory(plugin, player, "energy", 1);
@@ -176,13 +194,16 @@ public class TARDISCondenserListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onChestOpen(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         Block b = event.getClickedBlock();
         if (b != null && b.getType().equals(Material.CHEST) && event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
             Location loc = b.getLocation();
             String chest_loc = loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY() + ":" + loc.getBlockZ();
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("condenser", chest_loc);
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (rs.resultSet()) {
                 event.setCancelled(true);
                 openCondenser(b, event.getPlayer(), "Artron Condenser");
@@ -210,7 +231,7 @@ public class TARDISCondenserListener implements Listener {
         aec.setContents(is);
         try {
             Class.forName("org.bukkit.Sound");
-            p.playSound(p.getLocation(), Sound.CHEST_OPEN, 1, 1);
+            p.playSound(p.getLocation(), Sound.BLOCK_CHEST_OPEN, 1, 1);
         } catch (ClassNotFoundException e) {
             b.getLocation().getWorld().playEffect(b.getLocation(), Effect.CLICK1, 0);
         }

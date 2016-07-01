@@ -12,6 +12,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 
 public class TARDISSchematicListener implements Listener {
 
@@ -25,9 +26,12 @@ public class TARDISSchematicListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         final Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        if (!player.getItemInHand().getType().equals(wand) || !player.hasPermission("tardis.admin")) {
+        if (!player.getInventory().getItemInMainHand().getType().equals(wand) || !player.hasPermission("tardis.admin")) {
             return;
         }
         Block b = event.getClickedBlock();

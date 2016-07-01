@@ -20,11 +20,13 @@ import java.util.HashMap;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.advanced.TARDISCircuitChecker;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
@@ -58,22 +60,23 @@ public class TARDISRebuildCommand {
             boolean cham = false;
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", uuid.toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (!rs.resultSet()) {
                 TARDISMessage.send(player.getPlayer(), "NO_TARDIS");
                 return true;
             }
-            if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+            Tardis tardis = rs.getTardis();
+            if (plugin.getConfig().getBoolean("allow.power_down") && !tardis.isPowered_on()) {
                 TARDISMessage.send(player.getPlayer(), "POWER_DOWN");
                 return true;
             }
-            if (rs.getPreset().equals(PRESET.INVISIBLE)) {
+            if (tardis.getPreset().equals(PRESET.INVISIBLE)) {
                 TARDISMessage.send(player.getPlayer(), "INVISIBILITY_ENGAGED");
                 return true;
             }
-            int id = rs.getTardis_id();
+            final int id = tardis.getTardis_id();
             TARDISCircuitChecker tcc = null;
-            if (plugin.getConfig().getString("preferences.difficulty").equals("hard") && !plugin.getUtils().inGracePeriod(player.getPlayer(), true)) {
+            if (!plugin.getDifficulty().equals(DIFFICULTY.EASY) && !plugin.getUtils().inGracePeriod(player.getPlayer(), true)) {
                 tcc = new TARDISCircuitChecker(plugin, id);
                 tcc.getCircuits();
             }
@@ -88,15 +91,23 @@ public class TARDISRebuildCommand {
                 TARDISMessage.send(player.getPlayer(), "TARDIS_NO_REBUILD");
                 return true;
             }
+            if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                TARDISMessage.send(player.getPlayer(), "NOT_IN_VORTEX");
+                return true;
+            }
             if (plugin.getTrackerKeeper().getInVortex().contains(id)) {
                 TARDISMessage.send(player.getPlayer(), "NOT_WHILE_MAT");
                 return true;
             }
+            if (plugin.getTrackerKeeper().getDispersed().containsKey(uuid)) {
+                TARDISMessage.send(player.getPlayer(), "NOT_WHILE_DISPERSED");
+                return true;
+            }
             if (plugin.getConfig().getBoolean("travel.chameleon")) {
-                cham = rs.isChamele_on();
+                cham = tardis.isChamele_on();
             }
             HashMap<String, Object> wherecl = new HashMap<String, Object>();
-            wherecl.put("tardis_id", rs.getTardis_id());
+            wherecl.put("tardis_id", tardis.getTardis_id());
             ResultSetCurrentLocation rsc = new ResultSetCurrentLocation(plugin, wherecl);
             if (!rsc.resultSet()) {
                 TARDISMessage.send(player.getPlayer(), "CURRENT_NOT_FOUND");
@@ -104,27 +115,28 @@ public class TARDISRebuildCommand {
                 return true;
             }
             Location l = new Location(rsc.getWorld(), rsc.getX(), rsc.getY(), rsc.getZ());
-            int level = rs.getArtron_level();
+            int level = tardis.getArtron_level();
             int rebuild = plugin.getArtronConfig().getInt("random");
             if (level < rebuild) {
                 TARDISMessage.send(player.getPlayer(), "ENERGY_NO_REBUILD");
                 return false;
             }
-            final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-            pbd.setChameleon(cham);
-            pbd.setDirection(rsc.getDirection());
-            pbd.setLocation(l);
-            pbd.setMalfunction(false);
-            pbd.setOutside(false);
-            pbd.setPlayer(player);
-            pbd.setRebuild(true);
-            pbd.setSubmarine(rsc.isSubmarine());
-            pbd.setTardisID(id);
-            pbd.setBiome(rsc.getBiome());
+            final BuildData bd = new BuildData(plugin, uuid.toString());
+            bd.setChameleon(cham);
+            bd.setDirection(rsc.getDirection());
+            bd.setLocation(l);
+            bd.setMalfunction(false);
+            bd.setOutside(false);
+            bd.setPlayer(player);
+            bd.setRebuild(true);
+            bd.setSubmarine(rsc.isSubmarine());
+            bd.setTardisID(id);
+            bd.setBiome(rsc.getBiome());
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 @Override
                 public void run() {
-                    plugin.getPresetBuilder().buildPreset(pbd);
+                    plugin.getPresetBuilder().buildPreset(bd);
+                    plugin.getTrackerKeeper().getInVortex().add(id);
                 }
             }, 10L);
             TARDISMessage.send(player.getPlayer(), "TARDIS_REBUILT");
@@ -133,7 +145,7 @@ public class TARDISRebuildCommand {
             QueryFactory qf = new QueryFactory(plugin);
             qf.alterEnergyLevel("tardis", -rebuild, wheret, player.getPlayer());
             // set hidden to false
-            if (rs.isHidden()) {
+            if (tardis.isHidden()) {
                 HashMap<String, Object> whereh = new HashMap<String, Object>();
                 whereh.put("tardis_id", id);
                 HashMap<String, Object> seth = new HashMap<String, Object>();

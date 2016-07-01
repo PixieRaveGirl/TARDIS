@@ -29,7 +29,10 @@ import me.eccentric_nz.TARDIS.commands.preferences.TARDISPrefsMenuInventory;
 import me.eccentric_nz.TARDIS.database.ResultSetBackLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetDoors;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.INVENTORY_MANAGER;
 import static me.eccentric_nz.TARDIS.listeners.TARDISScannerListener.getNearbyEntities;
 import me.eccentric_nz.TARDIS.utility.TARDISGriefPreventionChecker;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -56,6 +59,7 @@ import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -84,7 +88,6 @@ public class TARDISSonicListener implements Listener {
     private final List<Material> diamond = new ArrayList<Material>();
     private final List<Material> distance = new ArrayList<Material>();
     private final List<Material> doors = new ArrayList<Material>();
-    private final List<Material> interactables = new ArrayList<Material>();
     private final List<Material> redstone = new ArrayList<Material>();
     private final List<UUID> frozenPlayers = new ArrayList<UUID>();
     private final List<BlockFace> faces = new ArrayList<BlockFace>();
@@ -102,8 +105,13 @@ public class TARDISSonicListener implements Listener {
         diamond.add(Material.STAINED_GLASS_PANE);
         diamond.add(Material.THIN_GLASS);
         diamond.add(Material.WEB);
+        distance.add(Material.ACACIA_DOOR);
+        distance.add(Material.BIRCH_DOOR);
+        distance.add(Material.DARK_OAK_DOOR);
         distance.add(Material.IRON_DOOR_BLOCK);
+        distance.add(Material.JUNGLE_DOOR);
         distance.add(Material.LEVER);
+        distance.add(Material.SPRUCE_DOOR);
         distance.add(Material.STONE_BUTTON);
         distance.add(Material.WOODEN_DOOR);
         distance.add(Material.WOOD_BUTTON);
@@ -115,46 +123,6 @@ public class TARDISSonicListener implements Listener {
         doors.add(Material.SPRUCE_DOOR);
         doors.add(Material.TRAP_DOOR);
         doors.add(Material.WOODEN_DOOR);
-        interactables.add(Material.ACACIA_DOOR);
-        interactables.add(Material.ACACIA_FENCE_GATE);
-        interactables.add(Material.ANVIL);
-        interactables.add(Material.BEACON);
-        interactables.add(Material.BED_BLOCK);
-        interactables.add(Material.BIRCH_DOOR);
-        interactables.add(Material.BIRCH_FENCE_GATE);
-        interactables.add(Material.BURNING_FURNACE);
-        interactables.add(Material.CHEST);
-        interactables.add(Material.DARK_OAK_DOOR);
-        interactables.add(Material.DARK_OAK_FENCE_GATE);
-        interactables.add(Material.DIODE_BLOCK_OFF);
-        interactables.add(Material.DIODE_BLOCK_ON);
-        interactables.add(Material.DISPENSER);
-        interactables.add(Material.DROPPER);
-        interactables.add(Material.ENDER_CHEST);
-        interactables.add(Material.FENCE_GATE);
-        interactables.add(Material.FURNACE);
-        interactables.add(Material.GOLD_PLATE);
-        interactables.add(Material.HOPPER);
-        interactables.add(Material.IRON_DOOR_BLOCK);
-        interactables.add(Material.IRON_PLATE);
-        interactables.add(Material.IRON_TRAPDOOR);
-        interactables.add(Material.JUKEBOX);
-        interactables.add(Material.JUNGLE_DOOR);
-        interactables.add(Material.JUNGLE_FENCE_GATE);
-        interactables.add(Material.LEVER);
-        interactables.add(Material.NOTE_BLOCK);
-        interactables.add(Material.REDSTONE_COMPARATOR_OFF);
-        interactables.add(Material.REDSTONE_COMPARATOR_ON);
-        interactables.add(Material.SPRUCE_DOOR);
-        interactables.add(Material.SPRUCE_FENCE_GATE);
-        interactables.add(Material.STONE_BUTTON);
-        interactables.add(Material.STONE_PLATE);
-        interactables.add(Material.TRAPPED_CHEST);
-        interactables.add(Material.TRAP_DOOR);
-        interactables.add(Material.WOODEN_DOOR);
-        interactables.add(Material.WOOD_BUTTON);
-        interactables.add(Material.WOOD_PLATE);
-        interactables.add(Material.WORKBENCH);
         redstone.add(Material.DETECTOR_RAIL);
         redstone.add(Material.IRON_DOOR_BLOCK);
         redstone.add(Material.PISTON_BASE);
@@ -179,16 +147,37 @@ public class TARDISSonicListener implements Listener {
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         final Player player = event.getPlayer();
         long now = System.currentTimeMillis();
-        final ItemStack is = player.getItemInHand();
+        final ItemStack is = player.getInventory().getItemInMainHand();
         if (is.getType().equals(sonic) && is.hasItemMeta()) {
-            ItemMeta im = player.getItemInHand().getItemMeta();
+            ItemMeta im = player.getInventory().getItemInMainHand().getItemMeta();
             if (ChatColor.stripColor(im.getDisplayName()).equals("Sonic Screwdriver")) {
                 List<String> lore = im.getLore();
                 Action action = event.getAction();
                 if (action.equals(Action.RIGHT_CLICK_AIR) && !player.isSneaking()) {
                     playSonicSound(player, now, 3050L, "sonic_screwdriver");
+                    // rebuild Police Box if dispersed by HADS
+                    if (plugin.getTrackerKeeper().getDispersed().containsKey(player.getUniqueId())) {
+                        // check player's location
+                        Location tmp = player.getLocation();
+                        Location pl = new Location(tmp.getWorld(), tmp.getBlockX(), tmp.getBlockY(), tmp.getBlockZ());
+                        Location pb = plugin.getTrackerKeeper().getDispersed().get(player.getUniqueId());
+                        if (pl.equals(pb)) {
+                            UUID uuid = player.getUniqueId();
+                            // get TARDIS id
+                            ResultSetTardisID rs = new ResultSetTardisID(plugin);
+                            if (rs.fromUUID(uuid.toString())) {
+                                // rebuild
+                                plugin.getTrackerKeeper().getDispersed().remove(uuid);
+                                plugin.getTrackerKeeper().getDispersedTARDII().remove(Integer.valueOf(rs.getTardis_id()));
+                                player.performCommand("tardis rebuild");
+                            }
+                        }
+                    }
                     if (player.hasPermission("tardis.sonic.freeze") && lore != null && lore.contains("Bio-scanner Upgrade")) {
                         long cool = System.currentTimeMillis();
                         if ((!cooldown.containsKey(player.getUniqueId()) || cooldown.get(player.getUniqueId()) < cool)) {
@@ -225,10 +214,8 @@ public class TARDISSonicListener implements Listener {
                                                 frozenPlayers.remove(uuid);
                                             }
                                         }, 100L);
-                                    } else {
-                                        if (player.hasPermission("tardis.sonic.standard")) {
-                                            standardSonic(player);
-                                        }
+                                    } else if (player.hasPermission("tardis.sonic.standard")) {
+                                        standardSonic(player);
                                     }
                                 }
                             }, 20L);
@@ -273,11 +260,12 @@ public class TARDISSonicListener implements Listener {
                                     // get the TARDIS owner's name
                                     HashMap<String, Object> wheren = new HashMap<String, Object>();
                                     wheren.put("tardis_id", id);
-                                    ResultSetTardis rsn = new ResultSetTardis(plugin, wheren, "", false);
+                                    ResultSetTardis rsn = new ResultSetTardis(plugin, wheren, "", false, 0);
                                     if (rsn.resultSet()) {
-                                        String name = plugin.getServer().getOfflinePlayer(rsn.getUuid()).getName();
+                                        Tardis tardis = rsn.getTardis();
+                                        String name = plugin.getServer().getOfflinePlayer(tardis.getUuid()).getName();
                                         TARDISMessage.send(player, "TARDIS_WHOSE", name);
-                                        int percent = Math.round((rsn.getArtron_level() * 100F) / plugin.getArtronConfig().getInt("full_charge"));
+                                        int percent = Math.round((tardis.getArtron_level() * 100F) / plugin.getArtronConfig().getInt("full_charge"));
                                         TARDISMessage.send(player, "ENERGY_LEVEL", String.format("%d", percent));
                                         HashMap<String, Object> whereb = new HashMap<String, Object>();
                                         whereb.put("tardis_id", id);
@@ -302,7 +290,7 @@ public class TARDISSonicListener implements Listener {
                             }
                         }, 60L);
                     }
-                    if (!redstone.contains(b.getType()) && player.hasPermission("tardis.sonic.emerald") && lore != null && lore.contains("Emerald Upgrade") && !interactables.contains(b.getType())) {
+                    if (!redstone.contains(b.getType()) && player.hasPermission("tardis.sonic.emerald") && lore != null && lore.contains("Emerald Upgrade") && !plugin.getGeneralKeeper().getInteractables().contains(b.getType())) {
                         playSonicSound(player, now, 3050L, "sonic_screwdriver");
                         // scan environment
                         this.scan(b.getLocation(), player);
@@ -410,12 +398,10 @@ public class TARDISSonicListener implements Listener {
                                             break;
                                         }
                                     }
-                                } else {
-                                    if (setExtension(b)) {
-                                        plugin.getGeneralKeeper().getSonicPistons().add(b.getLocation().toString());
-                                        piston.setPowered(true);
-                                        player.playSound(b.getLocation(), Sound.PISTON_EXTEND, 1.0f, 1.0f);
-                                    }
+                                } else if (setExtension(b)) {
+                                    plugin.getGeneralKeeper().getSonicPistons().add(b.getLocation().toString());
+                                    piston.setPowered(true);
+                                    player.playSound(b.getLocation(), Sound.BLOCK_PISTON_EXTEND, 1.0f, 1.0f);
                                 }
                                 b.setData(piston.getData());
                                 bs.update(true);
@@ -510,66 +496,62 @@ public class TARDISSonicListener implements Listener {
                                     default:
                                         break;
                                 }
-                                l.getWorld().playSound(l, Sound.SHEEP_SHEAR, 1.0F, 1.5F);
+                                l.getWorld().playSound(l, Sound.ENTITY_SHEEP_SHEAR, 1.0F, 1.5F);
                                 // set the block to AIR
                                 b.setType(Material.AIR);
-                            } else {
-                                if (mat.equals(Material.SNOW) || mat.equals(Material.SNOW_BLOCK)) {
-                                    // how many?
-                                    int balls;
-                                    if (mat.equals(Material.SNOW_BLOCK)) {
-                                        balls = 4;
-                                    } else {
-                                        balls = 1 + b.getData();
-                                    }
-                                    b.setType(Material.AIR);
-                                    b.getLocation().getWorld().dropItemNaturally(b.getLocation(), new ItemStack(Material.SNOW_BALL, balls));
+                            } else if (mat.equals(Material.SNOW) || mat.equals(Material.SNOW_BLOCK)) {
+                                // how many?
+                                int balls;
+                                if (mat.equals(Material.SNOW_BLOCK)) {
+                                    balls = 4;
                                 } else {
-                                    b.breakNaturally();
-                                    b.getLocation().getWorld().playSound(b.getLocation(), Sound.SHEEP_SHEAR, 1.0F, 1.5F);
+                                    balls = 1 + b.getData();
                                 }
-                            }
-                        }
-                    } else {
-                        if (paintable.contains(b.getType()) && player.hasPermission("tardis.sonic.paint") && lore != null && lore.contains("Painter Upgrade")) {
-                            // must be in TARDIS world
-                            if (!plugin.getUtils().inTARDISWorld(player)) {
-                                TARDISMessage.send(player, "UPDATE_IN_WORLD");
-                                return;
-                            }
-                            // check the block is not protected by WorldGuard
-                            if (plugin.isWorldGuardOnServer()) {
-                                if (!plugin.getWorldGuardUtils().canBreakBlock(player, b)) {
-                                    TARDISMessage.send(player, "SONIC_PROTECT");
-                                    return;
-                                }
-                            }
-                            playSonicSound(player, now, 600L, "sonic_short");
-                            // check for dye in slot
-                            PlayerInventory inv = player.getInventory();
-                            ItemStack dye = inv.getItem(8);
-                            if (dye == null || !dye.getType().equals(Material.INK_SACK)) {
-                                TARDISMessage.send(player, "SONIC_DYE");
-                                return;
-                            }
-                            byte dye_data = dye.getData().getData();
-                            byte block_data = b.getData();
-                            byte new_data = (byte) (15 - dye_data);
-                            // don't do anything if it is the same colour
-                            if (new_data == block_data) {
-                                return;
-                            }
-                            // remove one dye
-                            int a = dye.getAmount();
-                            int a2 = a - 1;
-                            if (a2 > 0) {
-                                inv.getItem(8).setAmount(a2);
+                                b.setType(Material.AIR);
+                                b.getLocation().getWorld().dropItemNaturally(b.getLocation(), new ItemStack(Material.SNOW_BALL, balls));
                             } else {
-                                inv.setItem(8, null);
+                                b.breakNaturally();
+                                b.getLocation().getWorld().playSound(b.getLocation(), Sound.ENTITY_SHEEP_SHEAR, 1.0F, 1.5F);
                             }
-                            player.updateInventory();
-                            b.setData(new_data, true);
                         }
+                    } else if (paintable.contains(b.getType()) && player.hasPermission("tardis.sonic.paint") && lore != null && lore.contains("Painter Upgrade")) {
+                        // must be in TARDIS world
+                        if (!plugin.getUtils().inTARDISWorld(player)) {
+                            TARDISMessage.send(player, "UPDATE_IN_WORLD");
+                            return;
+                        }
+                        // check the block is not protected by WorldGuard
+                        if (plugin.isWorldGuardOnServer()) {
+                            if (!plugin.getWorldGuardUtils().canBreakBlock(player, b)) {
+                                TARDISMessage.send(player, "SONIC_PROTECT");
+                                return;
+                            }
+                        }
+                        playSonicSound(player, now, 600L, "sonic_short");
+                        // check for dye in slot
+                        PlayerInventory inv = player.getInventory();
+                        ItemStack dye = inv.getItem(8);
+                        if (dye == null || !dye.getType().equals(Material.INK_SACK)) {
+                            TARDISMessage.send(player, "SONIC_DYE");
+                            return;
+                        }
+                        byte dye_data = dye.getData().getData();
+                        byte block_data = b.getData();
+                        byte new_data = (byte) (15 - dye_data);
+                        // don't do anything if it is the same colour
+                        if (new_data == block_data) {
+                            return;
+                        }
+                        // remove one dye
+                        int a = dye.getAmount();
+                        int a2 = a - 1;
+                        if (a2 > 0) {
+                            inv.getItem(8).setAmount(a2);
+                        } else {
+                            inv.setItem(8, null);
+                        }
+                        player.updateInventory();
+                        b.setData(new_data, true);
                     }
                 }
             }
@@ -578,23 +560,23 @@ public class TARDISSonicListener implements Listener {
 
     public void playSonicSound(final Player player, long now, long cooldown, String sound) {
         if ((!timeout.containsKey(player.getUniqueId()) || timeout.get(player.getUniqueId()) < now)) {
-            ItemMeta im = player.getItemInHand().getItemMeta();
+            ItemMeta im = player.getInventory().getItemInMainHand().getItemMeta();
             im.addEnchant(Enchantment.DURABILITY, 1, true);
-            if (!plugin.getPM().isPluginEnabled("Multiverse-Inventories")) {
+            if (!plugin.getInvManager().equals(INVENTORY_MANAGER.MULTIVERSE)) {
                 im.addItemFlags(ItemFlag.values());
             }
-            player.getItemInHand().setItemMeta(im);
+            player.getInventory().getItemInMainHand().setItemMeta(im);
             timeout.put(player.getUniqueId(), now + cooldown);
-            TARDISSounds.playTARDISSound(player.getLocation(), player, sound);
+            TARDISSounds.playTARDISSound(player.getLocation(), sound);
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 @Override
                 public void run() {
-                    ItemStack is = player.getItemInHand();
+                    ItemStack is = player.getInventory().getItemInMainHand();
                     if (is.hasItemMeta()) {
                         ItemMeta im = is.getItemMeta();
                         if (im.hasDisplayName() && ChatColor.stripColor(im.getDisplayName()).equals("Sonic Screwdriver")) {
-                            for (Enchantment e : player.getItemInHand().getEnchantments().keySet()) {
-                                player.getItemInHand().removeEnchantment(e);
+                            for (Enchantment e : player.getInventory().getItemInMainHand().getEnchantments().keySet()) {
+                                player.getInventory().getItemInMainHand().removeEnchantment(e);
                             }
                         } else {
                             // find the screwdriver in the player's inventory
@@ -710,9 +692,9 @@ public class TARDISSonicListener implements Listener {
         }, 60L);
         // get weather
         final String weather;
-        if (biome.equals(Biome.DESERT) || biome.equals(Biome.DESERT_HILLS) || biome.equals(Biome.SAVANNA) || biome.equals(Biome.SAVANNA_MOUNTAINS) || biome.equals(Biome.SAVANNA_PLATEAU) || biome.equals(Biome.SAVANNA_PLATEAU_MOUNTAINS) || biome.equals(Biome.MESA) || biome.equals(Biome.MESA_BRYCE) || biome.equals(Biome.MESA_PLATEAU) || biome.equals(Biome.MESA_PLATEAU_MOUNTAINS)) {
+        if (biome.equals(Biome.DESERT) || biome.equals(Biome.DESERT_HILLS) || biome.equals(Biome.MUTATED_DESERT) || biome.equals(Biome.SAVANNA) || biome.equals(Biome.SAVANNA_ROCK) || biome.equals(Biome.MUTATED_SAVANNA) || biome.equals(Biome.MUTATED_SAVANNA_ROCK) || biome.equals(Biome.MESA) || biome.equals(Biome.MUTATED_MESA) || biome.equals(Biome.MUTATED_MESA_CLEAR_ROCK) || biome.equals(Biome.MUTATED_MESA_ROCK) || biome.equals(Biome.MESA_ROCK) || biome.equals(Biome.MESA_CLEAR_ROCK)) {
             weather = plugin.getLanguage().getString("WEATHER_DRY");
-        } else if (biome.equals(Biome.ICE_PLAINS) || biome.equals(Biome.ICE_PLAINS_SPIKES) || biome.equals(Biome.FROZEN_OCEAN) || biome.equals(Biome.FROZEN_RIVER) || biome.equals(Biome.COLD_BEACH) || biome.equals(Biome.COLD_TAIGA) || biome.equals(Biome.COLD_TAIGA_HILLS) || biome.equals(Biome.COLD_TAIGA_MOUNTAINS)) {
+        } else if (biome.equals(Biome.ICE_FLATS) || biome.equals(Biome.MUTATED_ICE_FLATS) || biome.equals(Biome.FROZEN_OCEAN) || biome.equals(Biome.FROZEN_RIVER) || biome.equals(Biome.COLD_BEACH) || biome.equals(Biome.TAIGA_COLD) || biome.equals(Biome.TAIGA_COLD_HILLS) || biome.equals(Biome.MUTATED_TAIGA_COLD)) {
             weather = (scan_loc.getWorld().hasStorm()) ? plugin.getLanguage().getString("WEATHER_SNOW") : plugin.getLanguage().getString("WEATHER_COLD");
         } else {
             weather = (scan_loc.getWorld().hasStorm()) ? plugin.getLanguage().getString("WEATHER_RAIN") : plugin.getLanguage().getString("WEATHER_CLEAR");
@@ -766,7 +748,12 @@ public class TARDISSonicListener implements Listener {
         if (distance.contains(blockType)) {
             final BlockState bs = targetBlock.getState();
             switch (blockType) {
+                case ACACIA_DOOR:
+                case BIRCH_DOOR:
+                case DARK_OAK_DOOR:
                 case IRON_DOOR_BLOCK:
+                case JUNGLE_DOOR:
+                case SPRUCE_DOOR:
                 case WOODEN_DOOR:
                     final Block lowerdoor;
                     if (targetBlock.getData() >= 8) {

@@ -42,6 +42,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -71,7 +72,7 @@ public class TARDISSeedBlockListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSeedBlockPlace(BlockPlaceEvent event) {
         final Player player = event.getPlayer();
-        ItemStack is = player.getItemInHand();
+        ItemStack is = player.getInventory().getItemInMainHand();
         if (!is.hasItemMeta()) {
             return;
         }
@@ -81,7 +82,7 @@ public class TARDISSeedBlockListener implements Listener {
         }
         if (im.getDisplayName().equals("§6TARDIS Seed Block")) {
             List<String> lore = im.getLore();
-            SCHEMATIC schm = CONSOLES.getByNames().get(lore.get(0));
+            SCHEMATIC schm = CONSOLES.getBY_NAMES().get(lore.get(0));
             Pair wall_data = getValuesFromWallString(lore.get(1));
             Pair floor_data = getValuesFromWallString(lore.get(2));
             TwoValues cham_data = getValuesFromString(lore.get(3));
@@ -161,6 +162,9 @@ public class TARDISSeedBlockListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSeedInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         if (event.getClickedBlock() != null) {
             Location l = event.getClickedBlock().getLocation();
             if (trackTARDISSeed.containsKey(l)) {
@@ -174,7 +178,7 @@ public class TARDISSeedBlockListener implements Listener {
                 } else {
                     key = plugin.getConfig().getString("preferences.key");
                 }
-                if (player.getItemInHand().getType().equals(Material.getMaterial(key))) {
+                if (player.getInventory().getItemInMainHand().getType().equals(Material.getMaterial(key))) {
                     if (!plugin.getConfig().getBoolean("worlds." + l.getWorld().getName())) {
                         TARDISMessage.send(player, "WORLD_NO_TARDIS");
                         return;
@@ -219,30 +223,36 @@ public class TARDISSeedBlockListener implements Listener {
             }
             Material m = Material.getMaterial(mat);
             data.setId(m.getId());
-            if (m.equals(Material.STONE)) {
-                if (split2[1].endsWith("ANDESITE")) {
-                    data.setData((byte) 6);
-                }
-                if (split2[1].endsWith("DIORITE")) {
-                    data.setData((byte) 4);
-                }
-                if (split2[1].endsWith("GRANITE")) {
-                    data.setData((byte) 2);
-                }
-            } else if (m.equals(Material.WOOL) || m.equals(Material.STAINED_CLAY) || m.equals(Material.STAINED_GLASS)) {
-                data.setData(DyeColor.valueOf(split2[0]).getWoolData());
-            } else {
-                data.setData(getWoodDataType(m, split2[0]));
+            switch (m) {
+                case STONE:
+                    if (split2[1].endsWith("ANDESITE")) {
+                        data.setData((byte) 6);
+                    }
+                    if (split2[1].endsWith("DIORITE")) {
+                        data.setData((byte) 4);
+                    }
+                    if (split2[1].endsWith("GRANITE")) {
+                        data.setData((byte) 2);
+                    }
+                    break;
+                case WOOL:
+                case STAINED_CLAY:
+                case STAINED_GLASS:
+                    data.setData(DyeColor.valueOf(split2[0]).getWoolData());
+                    break;
+                default:
+                    data.setData(getWoodDataType(m, split2[0]));
+                    break;
             }
         } else if (split1[1].equals("ANDESITE") || split1[1].equals("DIORITE") || split1[1].equals("GRANITE")) {
             data.setId(1);
-            if (split2[1].endsWith("ANDESITE")) {
+            if (split1[1].equals("ANDESITE")) {
                 data.setData((byte) 5);
             }
-            if (split2[1].endsWith("DIORITE")) {
+            if (split1[1].equals("DIORITE")) {
                 data.setData((byte) 3);
             }
-            if (split2[1].endsWith("GRANITE")) {
+            if (split1[1].equals("GRANITE")) {
                 data.setData((byte) 1);
             }
         } else {

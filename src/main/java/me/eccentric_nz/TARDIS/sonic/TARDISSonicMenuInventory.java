@@ -39,7 +39,7 @@ public class TARDISSonicMenuInventory {
     }
 
     /**
-     * Constructs an inventory for the Player Preferences Menu GUI.
+     * Constructs an inventory for the Sonic Screwdriver Menu GUI.
      *
      * @return an Array of itemStacks (an inventory)
      */
@@ -136,6 +136,12 @@ public class TARDISSonicMenuInventory {
         song_im.setDisplayName(ChatColor.GOLD + "Sonic Screwdriver");
         song_im.setLore(Arrays.asList("River Song"));
         song.setItemMeta(song_im);
+        // twelfth doctor (peter capaldi)
+        ItemStack peter = new ItemStack(Material.BLAZE_ROD, 1);
+        ItemMeta capaldi = peter.getItemMeta();
+        capaldi.setDisplayName(ChatColor.UNDERLINE + "Sonic Screwdriver");
+        capaldi.setLore(Arrays.asList("Twelfth Doctor"));
+        peter.setItemMeta(capaldi);
         // info
         ItemStack info = new ItemStack(Material.BOOK, 1);
         ItemMeta info_im = info.getItemMeta();
@@ -149,9 +155,11 @@ public class TARDISSonicMenuInventory {
         close_im.setDisplayName("Close");
         close.setItemMeta(close_im);
 
-        ItemStack[] stack = {markone, marktwo, markthree, markfour, mcgann, eccelston, tennant, smith, hurt,
-            null, master, sarahjane, song, null, eccelston_open, tennant_open, smith_open, null,
-            null, null, null, null, info, null, null, null, close};
+        ItemStack[] stack = {
+            markone, marktwo, markthree, markfour, mcgann, eccelston, tennant, smith, hurt,
+            null, master, sarahjane, song, null, eccelston_open, tennant_open, smith_open, peter,
+            null, null, null, null, info, null, null, null, close
+        };
         return stack;
     }
 

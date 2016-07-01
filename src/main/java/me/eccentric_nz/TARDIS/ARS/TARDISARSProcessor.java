@@ -19,7 +19,7 @@ package me.eccentric_nz.TARDIS.ARS;
 import java.util.HashMap;
 import java.util.Map;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisArtron;
 import org.bukkit.Chunk;
 
 /**
@@ -59,40 +59,61 @@ public class TARDISARSProcessor {
                             slot.setX(x);
                             slot.setZ(z);
                             jettison.put(slot, TARDISARS.ARSFor(start[l][x][z]));
+                            // if it is a gravity well on the top or bottom levels jettison the other half too
+                            if (start[l][x][z] == 24 && l == 2) {
+                                TARDISARSJettison uslot = new TARDISARSJettison();
+                                uslot.setChunk(c);
+                                uslot.setY(3);
+                                uslot.setX(x);
+                                uslot.setZ(z);
+                                jettison.put(uslot, TARDISARS.ARSFor(24));
+                            }
+                            if (start[l][x][z] == 48 && l == 0) {
+                                TARDISARSJettison lslot = new TARDISARSJettison();
+                                lslot.setChunk(c);
+                                lslot.setY(-1);
+                                lslot.setX(x);
+                                lslot.setZ(z);
+                                jettison.put(lslot, TARDISARS.ARSFor(48));
+                            }
                         } else {
-                            if (end[l][x][z] == 24) {
-                                if (l == 0
-                                        || (l == 1 && end[l - 1][x][z] != 24)
-                                        || (l == 2 && end[l - 1][x][z] != 24)
-                                        || (l == 2 && end[l - 1][x][z] == 24 && end[l - 2][x][z] == 24)) {
-                                    // only remember the bottom slot of an anti-gravity well
+                            switch (end[l][x][z]) {
+                                case 24:
+                                    if (l == 0
+                                            || (l == 1 && end[l - 1][x][z] != 24)
+                                            || (l == 2 && end[l - 1][x][z] != 24)
+                                            || (l == 2 && end[l - 1][x][z] == 24 && end[l - 2][x][z] == 24)) {
+                                        // only remember the bottom slot of an anti-gravity well
+                                        TARDISARSSlot slot = new TARDISARSSlot();
+                                        slot.setChunk(c);
+                                        slot.setY(l);
+                                        slot.setX(x);
+                                        slot.setZ(z);
+                                        changed.put(slot, TARDISARS.ARSFor(end[l][x][z]));
+                                    }
+                                    break;
+                                case 48:
+                                    if (l == 2
+                                            || (l == 1 && end[l + 1][x][z] != 48)
+                                            || (l == 0 && end[l + 1][x][z] != 48)
+                                            || (l == 0 && end[l + 1][x][z] == 48 && end[l + 2][x][z] == 48)) {
+                                        // only remember the top slot of a gravity well
+                                        TARDISARSSlot slot = new TARDISARSSlot();
+                                        slot.setChunk(c);
+                                        slot.setY(l - 1);
+                                        slot.setX(x);
+                                        slot.setZ(z);
+                                        changed.put(slot, TARDISARS.ARSFor(end[l][x][z]));
+                                    }
+                                    break;
+                                default:
                                     TARDISARSSlot slot = new TARDISARSSlot();
                                     slot.setChunk(c);
                                     slot.setY(l);
                                     slot.setX(x);
                                     slot.setZ(z);
                                     changed.put(slot, TARDISARS.ARSFor(end[l][x][z]));
-                                }
-                            } else if (end[l][x][z] == 48) {
-                                if (l == 2
-                                        || (l == 1 && end[l + 1][x][z] != 48)
-                                        || (l == 0 && end[l + 1][x][z] != 48)
-                                        || (l == 0 && end[l + 1][x][z] == 48 && end[l + 2][x][z] == 48)) {
-                                    // only remember the top slot of a gravity well
-                                    TARDISARSSlot slot = new TARDISARSSlot();
-                                    slot.setChunk(c);
-                                    slot.setY(l);
-                                    slot.setX(x);
-                                    slot.setZ(z);
-                                    changed.put(slot, TARDISARS.ARSFor(end[l][x][z]));
-                                }
-                            } else {
-                                TARDISARSSlot slot = new TARDISARSSlot();
-                                slot.setChunk(c);
-                                slot.setY(l);
-                                slot.setX(x);
-                                slot.setZ(z);
-                                changed.put(slot, TARDISARS.ARSFor(end[l][x][z]));
+                                    break;
                             }
                         }
                     }
@@ -119,10 +140,8 @@ public class TARDISARSProcessor {
             for (Map.Entry<TARDISARSSlot, ARS> c : changed.entrySet()) {
                 totalcost += plugin.getRoomsConfig().getInt("rooms." + c.getValue().getActualName() + ".cost");
             }
-            HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("tardis_id", id);
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-            if (rs.resultSet()) {
+            ResultSetTardisArtron rs = new ResultSetTardisArtron(plugin);
+            if (rs.fromID(id)) {
                 int energy = rs.getArtron_level();
                 // check available energy vs cost
                 if (totalcost - recoveredcost > energy) {

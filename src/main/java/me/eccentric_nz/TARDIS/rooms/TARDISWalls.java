@@ -105,6 +105,7 @@ public class TARDISWalls {
         blocks.put("CHISELED_BRICK", new Pair(Material.SMOOTH_BRICK, (byte) 3));
         blocks.put("CHISELED_STONE", new Pair(Material.SMOOTH_BRICK, (byte) 3));
         blocks.put("NETHER_BRICK", new Pair(Material.NETHER_BRICK, (byte) 0));
+        blocks.put("RED_NETHER_BRICK", new Pair(Material.RED_NETHER_BRICK, (byte) 0));
         blocks.put("NETHERRACK", new Pair(Material.NETHERRACK, (byte) 0));
         blocks.put("SOUL_SAND", new Pair(Material.SOUL_SAND, (byte) 0));
         blocks.put("HUGE_MUSHROOM_1", new Pair(Material.HUGE_MUSHROOM_1, (byte) 14));
@@ -127,6 +128,11 @@ public class TARDISWalls {
         blocks.put("POLISHED_DIORITE", new Pair(Material.STONE, (byte) 4));
         blocks.put("ANDESITE", new Pair(Material.STONE, (byte) 5));
         blocks.put("POLISHED_ANDESITE", new Pair(Material.STONE, (byte) 6));
+        blocks.put("END_STONE_BRICK", new Pair(Material.END_BRICKS, (byte) 0));
+        blocks.put("PURPUR", new Pair(Material.PURPUR_BLOCK, (byte) 10));
+        blocks.put("PURPUR_PILLAR", new Pair(Material.PURPUR_PILLAR, (byte) 10));
+        blocks.put("BONE_BLOCK", new Pair(Material.BONE_BLOCK, (byte) 0));
+        blocks.put("NETHER_WART_BLOCK", new Pair(Material.NETHER_WART_BLOCK, (byte) 0));
         if (TARDIS.plugin.getConfig().getBoolean("allow.all_blocks")) {
             blocks.put("BEDROCK", new Pair(Material.BEDROCK, (byte) 0));
             blocks.put("COAL_ORE", new Pair(Material.COAL_ORE, (byte) 0));

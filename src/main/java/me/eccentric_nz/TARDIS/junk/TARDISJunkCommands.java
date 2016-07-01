@@ -39,8 +39,10 @@ public class TARDISJunkCommands implements CommandExecutor {
         this.firstArgs.add("create");
         this.firstArgs.add("delete");
         this.firstArgs.add("find");
+        this.firstArgs.add("floor");
         this.firstArgs.add("return");
         this.firstArgs.add("time");
+        this.firstArgs.add("wall");
     }
 
     @Override
@@ -77,6 +79,9 @@ public class TARDISJunkCommands implements CommandExecutor {
                     return new TARDISJunkDelete(plugin).delete(sender);
                 }
                 return true;
+            }
+            if (args.length == 2 && first.equals("floor") || first.equals("wall")) {
+                return new TARDISJunkFloorWall(plugin).setJunkWallOrFloor(sender, args);
             }
         }
         return false;

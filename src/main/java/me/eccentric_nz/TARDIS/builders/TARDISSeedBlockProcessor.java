@@ -23,7 +23,7 @@ import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCount;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.enumeration.SCHEMATIC;
 import me.eccentric_nz.TARDIS.rooms.TARDISWalls;
@@ -84,10 +84,8 @@ public class TARDISSeedBlockProcessor {
             }
             String playerNameStr = player.getName();
             // check to see if they already have a TARDIS
-            HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-            if (!rs.resultSet()) {
+            ResultSetTardisID rs = new ResultSetTardisID(plugin);
+            if (!rs.fromUUID(player.getUniqueId().toString())) {
                 SCHEMATIC schm = seed.getSchematic();
                 // check perms
                 if (!schm.getPermission().equals("budget") && !player.hasPermission("tardis." + schm.getPermission())) {
@@ -197,19 +195,19 @@ public class TARDISSeedBlockProcessor {
                 setlocs.put("direction", d);
                 qf.insertLocations(setlocs, biome, lastInsertId);
                 // turn the block stack into a TARDIS
-                TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-                pbd.setChameleon(false);
-                pbd.setDirection(COMPASS.valueOf(d));
-                pbd.setLocation(l);
-                pbd.setMalfunction(false);
-                pbd.setOutside(true);
-                pbd.setPlayer(player);
-                pbd.setRebuild(false);
-                pbd.setSubmarine(isSub(l));
-                pbd.setTardisID(lastInsertId);
-                pbd.setBiome(l.getBlock().getBiome());
+                BuildData bd = new BuildData(plugin, player.getUniqueId().toString());
+                bd.setChameleon(false);
+                bd.setDirection(COMPASS.valueOf(d));
+                bd.setLocation(l);
+                bd.setMalfunction(false);
+                bd.setOutside(true);
+                bd.setPlayer(player);
+                bd.setRebuild(false);
+                bd.setSubmarine(isSub(l));
+                bd.setTardisID(lastInsertId);
+                bd.setBiome(l.getBlock().getBiome());
                 // police box needs to use chameleon id/data
-                plugin.getPresetBuilder().buildPreset(pbd);
+                plugin.getPresetBuilder().buildPreset(bd);
                 plugin.getInteriorBuilder().buildInner(schm, chunkworld, lastInsertId, player, wall_type, wall_data, floor_type, floor_data, tips);
                 // set achievement completed
                 if (player.hasPermission("tardis.book")) {

@@ -26,8 +26,7 @@ import me.eccentric_nz.TARDIS.advanced.TARDISDiskCraftListener;
 import me.eccentric_nz.TARDIS.advanced.TARDISStorageListener;
 import me.eccentric_nz.TARDIS.arch.TARDISFakeChatListener;
 import me.eccentric_nz.TARDIS.arch.TARDISFobWatchListener;
-import me.eccentric_nz.TARDIS.arch.TARDISGMIHelper;
-import me.eccentric_nz.TARDIS.arch.TARDISMVIHelper;
+import me.eccentric_nz.TARDIS.arch.TARDISInventoryPluginHelper;
 import me.eccentric_nz.TARDIS.arch.TARDISRespawnListener;
 import me.eccentric_nz.TARDIS.arch.TARDISSelectWatchListener;
 import me.eccentric_nz.TARDIS.artron.TARDISArtronCapacitorListener;
@@ -40,11 +39,16 @@ import me.eccentric_nz.TARDIS.chameleon.TARDISChameleonTemplateListener;
 import me.eccentric_nz.TARDIS.chameleon.TARDISPageThreeListener;
 import me.eccentric_nz.TARDIS.chameleon.TARDISPresetListener;
 import me.eccentric_nz.TARDIS.commands.admin.TARDISAdminMenuListener;
+import me.eccentric_nz.TARDIS.commands.preferences.TARDISHumListener;
 import me.eccentric_nz.TARDIS.commands.preferences.TARDISKeyMenuListener;
 import me.eccentric_nz.TARDIS.commands.preferences.TARDISPrefsMenuListener;
+import me.eccentric_nz.TARDIS.companionGUI.TARDISCompanionAddGUIListener;
+import me.eccentric_nz.TARDIS.companionGUI.TARDISCompanionGUIListener;
 import me.eccentric_nz.TARDIS.control.TARDISControlMenuListener;
 import me.eccentric_nz.TARDIS.desktop.TARDISThemeMenuListener;
 import me.eccentric_nz.TARDIS.desktop.TARDISWallMenuListener;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
+import me.eccentric_nz.TARDIS.enumeration.INVENTORY_MANAGER;
 import me.eccentric_nz.TARDIS.flight.TARDISHandbrakeListener;
 import me.eccentric_nz.TARDIS.flight.TARDISManualFlightListener;
 import me.eccentric_nz.TARDIS.flight.TARDISRegulatorListener;
@@ -59,13 +63,14 @@ import me.eccentric_nz.TARDIS.lazarus.TARDISLazarusListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISAntiBuildListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISAnvilListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISAreaListener;
-import me.eccentric_nz.TARDIS.listeners.TARDISAreaSignListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISBeaconColouringListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISBindListener;
+import me.eccentric_nz.TARDIS.listeners.TARDISBiomeReaderListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISBlockBreakListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISBlockDamageListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISBlockPhysicsListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISBlockPlaceListener;
+import me.eccentric_nz.TARDIS.listeners.TARDISBlockStackListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISButtonListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISChatListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISChunkListener;
@@ -91,6 +96,7 @@ import me.eccentric_nz.TARDIS.listeners.TARDISNPCListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISPerceptionFilterListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISPistonHarvesterListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISPistonListener;
+import me.eccentric_nz.TARDIS.listeners.TARDISPlayerKickListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISQuitListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISRecipeListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISRedstoneListener;
@@ -103,6 +109,7 @@ import me.eccentric_nz.TARDIS.listeners.TARDISSignListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISSpawnListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISStattenheimListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISTagListener;
+import me.eccentric_nz.TARDIS.listeners.TARDISTelepathicListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISTeleportListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISTemporalListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISTemporalLocatorListener;
@@ -112,9 +119,14 @@ import me.eccentric_nz.TARDIS.listeners.TARDISVaultListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISWorldResetListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISZeroRoomChatListener;
 import me.eccentric_nz.TARDIS.listeners.TARDISZeroRoomPacketListener;
+import me.eccentric_nz.TARDIS.move.TARDISAnyoneDoorListener;
+import me.eccentric_nz.TARDIS.move.TARDISAnyoneMoveListener;
 import me.eccentric_nz.TARDIS.move.TARDISDoorClickListener;
 import me.eccentric_nz.TARDIS.move.TARDISDoorWalkListener;
 import me.eccentric_nz.TARDIS.move.TARDISMoveListener;
+import me.eccentric_nz.TARDIS.planets.TARDISAcidWater;
+import me.eccentric_nz.TARDIS.planets.TARDISResourcePackSwitcher;
+import me.eccentric_nz.TARDIS.planets.TARDISSkaroSpawnListener;
 import me.eccentric_nz.TARDIS.rooms.TARDISJettisonSeeder;
 import me.eccentric_nz.TARDIS.rooms.TARDISRoomSeeder;
 import me.eccentric_nz.TARDIS.schematic.TARDISSchematicListener;
@@ -122,11 +134,15 @@ import me.eccentric_nz.TARDIS.siegemode.TARDISBreedingListener;
 import me.eccentric_nz.TARDIS.siegemode.TARDISGrowthListener;
 import me.eccentric_nz.TARDIS.siegemode.TARDISSiegeListener;
 import me.eccentric_nz.TARDIS.sonic.TARDISFarmBlockListener;
+import me.eccentric_nz.TARDIS.sonic.TARDISSonicActivatorListener;
 import me.eccentric_nz.TARDIS.sonic.TARDISSonicEntityListener;
+import me.eccentric_nz.TARDIS.sonic.TARDISSonicGeneratorListener;
+import me.eccentric_nz.TARDIS.sonic.TARDISSonicGeneratorMenuListener;
 import me.eccentric_nz.TARDIS.sonic.TARDISSonicListener;
 import me.eccentric_nz.TARDIS.sonic.TARDISSonicMenuListener;
 import me.eccentric_nz.TARDIS.sonic.TARDISSonicSorterListener;
 import me.eccentric_nz.TARDIS.sonic.TARDISSonicUpgradeListener;
+import me.eccentric_nz.TARDIS.travel.TARDISAreaSignListener;
 import me.eccentric_nz.TARDIS.travel.TARDISTerminalListener;
 
 /**
@@ -149,12 +165,18 @@ public class TARDISListenerRegisterer {
      */
     public void registerListeners() {
         if (plugin.getConfig().getBoolean("creation.use_block_stack")) {
-            plugin.getPM().registerEvents(new TARDISBlockPlaceListener(plugin), plugin);
+            plugin.getPM().registerEvents(new TARDISBlockStackListener(plugin), plugin);
         }
         plugin.getPM().registerEvents(new TARDISBlockBreakListener(plugin), plugin);
+        plugin.getPM().registerEvents(new TARDISBlockPlaceListener(plugin), plugin);
         if (plugin.getConfig().getBoolean("preferences.walk_in_tardis")) {
-            plugin.getPM().registerEvents(new TARDISDoorWalkListener(plugin), plugin);
-            plugin.getPM().registerEvents(new TARDISMoveListener(plugin), plugin);
+            if (plugin.getConfig().getBoolean("preferences.open_door_policy")) {
+                plugin.getPM().registerEvents(new TARDISAnyoneDoorListener(plugin), plugin);
+                plugin.getPM().registerEvents(new TARDISAnyoneMoveListener(plugin), plugin);
+            } else {
+                plugin.getPM().registerEvents(new TARDISDoorWalkListener(plugin), plugin);
+                plugin.getPM().registerEvents(new TARDISMoveListener(plugin), plugin);
+            }
         } else {
             plugin.getPM().registerEvents(new TARDISDoorClickListener(plugin), plugin);
         }
@@ -182,6 +204,9 @@ public class TARDISListenerRegisterer {
         }
         plugin.getPM().registerEvents(new TARDISBeaconColouringListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISBindListener(plugin), plugin);
+        if (!plugin.getDifficulty().equals(DIFFICULTY.HARD)) {
+            plugin.getPM().registerEvents(new TARDISBiomeReaderListener(plugin), plugin);
+        }
         plugin.getPM().registerEvents(new TARDISBlockDamageListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISBlockPhysicsListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISChameleonListener(plugin), plugin);
@@ -193,6 +218,8 @@ public class TARDISListenerRegisterer {
         if (plugin.getConfig().getBoolean("circuits.damage")) {
             plugin.getPM().registerEvents(new TARDISCircuitRepairListener(plugin), plugin);
         }
+        plugin.getPM().registerEvents(new TARDISCompanionGUIListener(plugin), plugin);
+        plugin.getPM().registerEvents(new TARDISCompanionAddGUIListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISCondenserListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISConsoleCloseListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISConsoleListener(plugin), plugin);
@@ -215,6 +242,7 @@ public class TARDISListenerRegisterer {
         }
         plugin.getPM().registerEvents(new TARDISHorseListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISHotbarListener(plugin), plugin);
+        plugin.getPM().registerEvents(new TARDISHumListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISIceMeltListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISInformationSystemListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISJettisonSeeder(plugin), plugin);
@@ -253,6 +281,9 @@ public class TARDISListenerRegisterer {
         }
         plugin.getPM().registerEvents(new TARDISSignListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISSonicEntityListener(plugin), plugin);
+        plugin.getPM().registerEvents(new TARDISSonicGeneratorMenuListener(plugin), plugin);
+        plugin.getPM().registerEvents(new TARDISSonicGeneratorListener(plugin), plugin);
+        plugin.getPM().registerEvents(new TARDISSonicActivatorListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISSonicMenuListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISSonicSorterListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISSonicUpgradeListener(plugin), plugin);
@@ -260,6 +291,7 @@ public class TARDISListenerRegisterer {
         plugin.getPM().registerEvents(new TARDISStattenheimListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISStorageListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISTagListener(plugin), plugin);
+        plugin.getPM().registerEvents(new TARDISTelepathicListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISTeleportListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISTemporalListener(plugin), plugin);
         plugin.getPM().registerEvents(new TARDISTemporalLocatorListener(plugin), plugin);
@@ -280,11 +312,9 @@ public class TARDISListenerRegisterer {
         if (plugin.getPM().isPluginEnabled("Multiverse-Adventure")) {
             plugin.getPM().registerEvents(new TARDISWorldResetListener(plugin), plugin);
         }
-        if (plugin.getConfig().getBoolean("allow.zero_room")) {
-            plugin.getPM().registerEvents(new TARDISZeroRoomChatListener(plugin), plugin);
-            if (plugin.getPM().isPluginEnabled("ProtocolLib")) {
-                new TARDISZeroRoomPacketListener(plugin);
-            }
+        plugin.getPM().registerEvents(new TARDISZeroRoomChatListener(plugin), plugin);
+        if (plugin.getConfig().getBoolean("allow.zero_room") && plugin.getPM().isPluginEnabled("ProtocolLib")) {
+            new TARDISZeroRoomPacketListener(plugin);
         }
         if (plugin.getPM().isPluginEnabled("ProtocolLib")) {
             TARDISKeyboardPacketListener kpl = new TARDISKeyboardPacketListener(plugin);
@@ -296,11 +326,8 @@ public class TARDISListenerRegisterer {
                     plugin.getPM().registerEvents(new TARDISSelectWatchListener(plugin), plugin);
                     plugin.getPM().registerEvents(new TARDISRespawnListener(plugin), plugin);
                     if (plugin.getConfig().getBoolean("arch.switch_inventory")) {
-                        if (plugin.getPM().isPluginEnabled("Multiverse-Inventories")) {
-                            plugin.getPM().registerEvents(new TARDISMVIHelper(plugin), plugin);
-                        }
-                        if (plugin.getPM().isPluginEnabled("GameModeInventories")) {
-                            plugin.getPM().registerEvents(new TARDISGMIHelper(plugin), plugin);
+                        if (!plugin.getInvManager().equals(INVENTORY_MANAGER.NONE)) {
+                            plugin.getPM().registerEvents(new TARDISInventoryPluginHelper(plugin), plugin);
                         }
                     }
                 }
@@ -311,6 +338,16 @@ public class TARDISListenerRegisterer {
         plugin.getPM().registerEvents(new TARDISItemFrameListener(plugin), plugin);
         if (plugin.getConfig().getBoolean("allow.wg_flag_set") && plugin.getPM().isPluginEnabled("WorldGuard")) {
             plugin.getPM().registerEvents(new TARDISAntiBuildListener(plugin), plugin);
+        }
+        plugin.getPM().registerEvents(new TARDISPlayerKickListener(plugin), plugin);
+        if (plugin.getPlanetsConfig().getBoolean("planets.Skaro.enabled") && plugin.getPlanetsConfig().getBoolean("planets.Skaro.acid")) {
+            plugin.getPM().registerEvents(new TARDISAcidWater(plugin), plugin);
+            if (plugin.getPM().getPlugin("TARDISWeepingAngels") != null && plugin.getPM().getPlugin("TARDISWeepingAngels").isEnabled()) {
+                plugin.getPM().registerEvents(new TARDISSkaroSpawnListener(plugin), plugin);
+            }
+        }
+        if (plugin.getPlanetsConfig().getBoolean("switch_resource_packs")) {
+            plugin.getPM().registerEvents(new TARDISResourcePackSwitcher(plugin), plugin);
         }
     }
 

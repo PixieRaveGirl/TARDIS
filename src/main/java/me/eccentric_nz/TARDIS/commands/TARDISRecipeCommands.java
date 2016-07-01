@@ -54,6 +54,7 @@ public class TARDISRecipeCommands implements CommandExecutor {
     public TARDISRecipeCommands(TARDIS plugin) {
         this.plugin = plugin;
         firstArgs.add("a-circuit"); // Admin Circuit
+        firstArgs.add("acid-battery"); // Admin Circuit
         firstArgs.add("ars-circuit"); // ARS Circuit
         firstArgs.add("bio-circuit"); // Bio-scanner Circuit
         firstArgs.add("biome-disk"); // Biome Storage Disk
@@ -69,6 +70,7 @@ public class TARDISRecipeCommands implements CommandExecutor {
         firstArgs.add("filter"); // Perception Filter
         firstArgs.add("fish-finger"); // Fish Finger
         firstArgs.add("furnace"); // TARDIS Artron Furnace
+        firstArgs.add("generator"); // Sonic Generator
         firstArgs.add("glasses"); // 3-D Glasses
         firstArgs.add("i-circuit"); // Input Circuit
         firstArgs.add("ignite-circuit"); // Ignite Circuit
@@ -89,29 +91,36 @@ public class TARDISRecipeCommands implements CommandExecutor {
         firstArgs.add("r-circuit"); // Redstone Circuit
         firstArgs.add("r-key"); // TARDIS Remote Key
         firstArgs.add("randomiser-circuit"); // Randomiser Circuit
+        firstArgs.add("reader"); // TARDIS Biome Reader
         firstArgs.add("remote"); // Stattenheim Remote
+        firstArgs.add("rift-circuit"); // Rift Circuit
+        firstArgs.add("rift-manipulator"); // Rift Manipulator
+        firstArgs.add("rust"); // Rust Plague Sword
         firstArgs.add("s-circuit"); // Stattenheim Circuit
         firstArgs.add("save-disk"); // Save Storage Disk
         firstArgs.add("scanner-circuit"); // Scanner Circuit
         firstArgs.add("sonic"); // Sonic Screwdriver
         firstArgs.add("t-circuit"); // Temporal Circuit
         firstArgs.add("tardis"); // TARDIS Seed Block
+        firstArgs.add("telepathic"); // TARDIS Telepathic Circuit
         firstArgs.add("vortex"); // Vortex Manipulator
         firstArgs.add("watch"); // TARDIS Seed Block
-        // DELUXE, ELEVENTH, TWELFTH, ARS & REDSTONE schematics supplied by Lord_Rahl and killeratnight at mcnovus.net
+        // DELUXE, ELEVENTH, TWELFTH, ARS & REDSTONE schematics designed by Lord_Rahl and killeratnight at mcnovus.net
         t.put("ARS", Material.QUARTZ_BLOCK); // ARS
         t.put("BIGGER", Material.GOLD_BLOCK); // bigger
         t.put("BUDGET", Material.IRON_BLOCK); // budget
+        t.put("CORAL", Material.NETHER_WART_BLOCK); // coral schematic designed by vistaero
         t.put("DELUXE", Material.DIAMOND_BLOCK); // deluxe
         t.put("ELEVENTH", Material.EMERALD_BLOCK); // eleventh
+        t.put("ENDER", Material.PURPUR_BLOCK); // ender schematic designed by ToppanaFIN (player at thatsnotacreeper.com)
         t.put("PLANK", Material.BOOKSHELF); // plank
         t.put("REDSTONE", Material.REDSTONE_BLOCK); // redstone
         t.put("STEAMPUNK", Material.COAL_BLOCK); // steampunk
         t.put("TOM", Material.LAPIS_BLOCK); // tom baker
         t.put("TWELFTH", Material.PRISMARINE); // twelfth
         t.put("WAR", Material.STAINED_CLAY); // war doctor
-        t.put("PYRAMID", Material.SANDSTONE_STAIRS); // pyramid schematic supplied by airomis (player at thatsnotacreeper.com)
-        t.put("MASTER", Material.NETHER_BRICK); // master schematic supplied by macdja38 at pvpcraft.ca
+        t.put("PYRAMID", Material.SANDSTONE_STAIRS); // pyramid schematic designed by airomis (player at thatsnotacreeper.com)
+        t.put("MASTER", Material.NETHER_BRICK); // master schematic designed by shadowhawk14269 (while playing at pvpcraft.ca)
         // custom seeds
         for (String console : plugin.getCustomConsolesConfig().getKeys(false)) {
             if (plugin.getCustomConsolesConfig().getBoolean(console + ".enabled")) {
@@ -164,6 +173,10 @@ public class TARDISRecipeCommands implements CommandExecutor {
                 this.showShapedRecipe(player, "Server Admin Circuit");
                 return true;
             }
+            if (args[0].equalsIgnoreCase("acid-battery")) {
+                this.showShapedRecipe(player, "Acid Battery");
+                return true;
+            }
             if (args[0].equalsIgnoreCase("ars-circuit")) {
                 this.showShapedRecipe(player, "TARDIS ARS Circuit");
                 return true;
@@ -214,6 +227,10 @@ public class TARDISRecipeCommands implements CommandExecutor {
             }
             if (args[0].equalsIgnoreCase("furnace")) {
                 this.showShapedRecipe(player, "TARDIS Artron Furnace");
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("generator")) {
+                this.showShapedRecipe(player, "Sonic Generator");
                 return true;
             }
             if (args[0].equalsIgnoreCase("glasses")) {
@@ -292,8 +309,24 @@ public class TARDISRecipeCommands implements CommandExecutor {
                 this.showShapedRecipe(player, "TARDIS Randomiser Circuit");
                 return true;
             }
+            if (args[0].equalsIgnoreCase("reader")) {
+                showShapedRecipe(player, "TARDIS Biome Reader");
+                return true;
+            }
             if (args[0].equalsIgnoreCase("remote")) {
                 showShapedRecipe(player, "Stattenheim Remote");
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("rift-circuit")) {
+                showShapedRecipe(player, "Rift Circuit");
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("rift-manipulator")) {
+                showShapedRecipe(player, "Rift Manipulator");
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("rust")) {
+                showShapedRecipe(player, "Rust Plague Sword");
                 return true;
             }
             if (args[0].equalsIgnoreCase("s-circuit")) {
@@ -314,6 +347,10 @@ public class TARDISRecipeCommands implements CommandExecutor {
             }
             if (args[0].equalsIgnoreCase("t-circuit")) {
                 this.showShapedRecipe(player, "TARDIS Temporal Circuit");
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("telepathic")) {
+                this.showShapedRecipe(player, "TARDIS Telepathic Circuit");
                 return true;
             }
             if (args[0].equalsIgnoreCase("watch")) {
@@ -374,6 +411,21 @@ public class TARDISRecipeCommands implements CommandExecutor {
                 if (str.equals("Sonic Blaster") && item.getType().equals(Material.BUCKET)) {
                     ItemMeta im = item.getItemMeta();
                     im.setDisplayName("Blaster Battery");
+                    item.setItemMeta(im);
+                }
+                if (str.equals("Acid Battery") && item.getType().equals(Material.WATER_BUCKET)) {
+                    ItemMeta im = item.getItemMeta();
+                    im.setDisplayName("Acid Bucket");
+                    item.setItemMeta(im);
+                }
+                if (str.equals("Rift Manipulator") && item.getType().equals(Material.NETHER_BRICK_ITEM)) {
+                    ItemMeta im = item.getItemMeta();
+                    im.setDisplayName("Acid Battery");
+                    item.setItemMeta(im);
+                }
+                if (str.equals("Rift Manipulator") && item.getType().equals(Material.MAP)) {
+                    ItemMeta im = item.getItemMeta();
+                    im.setDisplayName("Rift Circuit");
                     item.setItemMeta(im);
                 }
                 view.getTopInventory().setItem(j * 3 + k + 1, item);

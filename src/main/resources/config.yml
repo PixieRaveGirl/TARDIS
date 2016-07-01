@@ -7,7 +7,7 @@ storage:
         url: mysql://localhost:3306/TARDIS
         user: bukkit
         password: mysecurepassword
-        prefix:
+        prefix: ""
 # inner TARDIS
 creation:
     create_worlds: false
@@ -34,9 +34,7 @@ police_box:
     name_tardis: false
     wall_id: 35
     wall_data: 11
-    tardis_lamp: 50
-    platform_id: 35
-    platform_data: 8
+    tardis_lamp: REDSTONE_LAMP_OFF
     materialise: true
     confirm_timeout: 15
     sign_colour: WHITE
@@ -46,6 +44,7 @@ police_box:
 travel:
     include_default_world: false
     tp_radius: 500
+    max_distance: 29999983
     chameleon: true
     give_key: false
     the_end: false
@@ -66,11 +65,13 @@ travel:
     random_circuit:
         x: 5000
         z: 5000
+    no_destination_malfunctions: true
 # general preferences
 preferences:
     language: en
     key: GOLD_NUGGET
     walk_in_tardis: true
+    open_door_policy: false
     use_worldguard: true
     respect_worldguard: build
     respect_towny: nation
@@ -96,6 +97,9 @@ preferences:
         only_tardis_worlds: true
     render_entities: false
     spawn_random_monsters: true
+    spawn_limit: 10
+    no_creative_condense: false
+    vortex_fall: kill
 # desktop theme
 desktop:
     check_blocks_before_upgrade: false
@@ -115,6 +119,7 @@ circuits:
         temporal: 20
 # restrictions
 allow:
+    abandon: true
     mob_farming: true
     spawn_eggs: true
     emergency_npc: true
@@ -129,7 +134,7 @@ allow:
     wg_flag_set: true
     zero_room: false
     external_gravity: false
-    power_down: false
+    power_down: true
     power_down_on_quit: false
     player_difficulty: true
     3d_doors: false
@@ -164,6 +169,10 @@ junk:
     enabled: true
     return: -1
     particles: true
+# abandoment
+abandon:
+    enabled: true
+    reduce_count: true
 # don't touch
 conversions:
     biome_update: true

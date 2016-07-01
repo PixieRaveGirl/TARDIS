@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
+import me.eccentric_nz.TARDIS.enumeration.HADS;
 import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
+import org.bukkit.Material;
 
 /**
  * Many facts, figures, and formulas are contained within the Matrix,
@@ -47,9 +49,10 @@ public class ResultSetPlayerPrefs {
     private boolean autoSiegeOn;
     private boolean beaconOn;
     private boolean hadsOn;
+    private HADS hadsType;
     private boolean submarineOn;
     private int artronLevel;
-    private int lamp;
+    private Material lamp;
     private String language;
     private String wall;
     private String floor;
@@ -67,11 +70,15 @@ public class ResultSetPlayerPrefs {
     private boolean woolLightsOn;
     private boolean ctmOn;
     private boolean signOn;
+    private boolean telepathyOn;
     private boolean travelbarOn;
     private boolean farmOn;
     private boolean lanternsOn;
+    private boolean policeboxTexturesOn;
     private int flightMode;
     private boolean easyDifficulty;
+    private boolean autoPowerUp;
+    private String hum;
     private final String prefix;
 
     /**
@@ -133,13 +140,26 @@ public class ResultSetPlayerPrefs {
                 this.autoSiegeOn = rs.getBoolean("auto_siege_on");
                 this.beaconOn = rs.getBoolean("beacon_on");
                 this.hadsOn = rs.getBoolean("hads_on");
+                this.hadsType = HADS.valueOf(rs.getString("hads_type"));
                 this.submarineOn = rs.getBoolean("submarine_on");
                 this.artronLevel = rs.getInt("artron_level");
-                this.lamp = rs.getInt("lamp");
-                this.language = rs.getString("language");
-                if (rs.wasNull()) {
-                    this.lamp = plugin.getConfig().getInt("police_box.tardis_lamp");
+                String trylamp = rs.getString("lamp");
+                Material default_lamp;
+                try {
+                    default_lamp = Material.valueOf(plugin.getConfig().getString("police_box.tardis_lamp"));
+                } catch (IllegalArgumentException e) {
+                    default_lamp = Material.REDSTONE_LAMP_OFF;
                 }
+                if (rs.wasNull()) {
+                    this.lamp = default_lamp;
+                } else {
+                    try {
+                        this.lamp = Material.valueOf(trylamp);
+                    } catch (IllegalArgumentException e) {
+                        this.lamp = default_lamp;
+                    }
+                }
+                this.language = rs.getString("language");
                 this.wall = rs.getString("wall");
                 this.floor = rs.getString("floor");
                 this.siegeWall = rs.getString("siege_wall");
@@ -163,11 +183,15 @@ public class ResultSetPlayerPrefs {
                 this.woolLightsOn = rs.getBoolean("wool_lights_on");
                 this.ctmOn = rs.getBoolean("ctm_on");
                 this.signOn = rs.getBoolean("sign_on");
+                this.telepathyOn = rs.getBoolean("telepathy_on");
                 this.travelbarOn = rs.getBoolean("travelbar_on");
                 this.farmOn = rs.getBoolean("farm_on");
                 this.lanternsOn = rs.getBoolean("lanterns_on");
+                this.policeboxTexturesOn = rs.getBoolean("policebox_textures_on");
                 this.flightMode = rs.getInt("flying_mode");
                 this.easyDifficulty = rs.getBoolean("difficulty");
+                this.autoPowerUp = rs.getBoolean("auto_powerup_on");
+                this.hum = rs.getString("hum");
             } else {
                 return false;
             }
@@ -225,6 +249,10 @@ public class ResultSetPlayerPrefs {
         return hadsOn;
     }
 
+    public HADS getHadsType() {
+        return hadsType;
+    }
+
     public int getArtronLevel() {
         return artronLevel;
     }
@@ -269,7 +297,7 @@ public class ResultSetPlayerPrefs {
         return textureOut;
     }
 
-    public int getLamp() {
+    public Material getLamp() {
         return lamp;
     }
 
@@ -305,6 +333,10 @@ public class ResultSetPlayerPrefs {
         return signOn;
     }
 
+    public boolean isTelepathyOn() {
+        return telepathyOn;
+    }
+
     public boolean isTravelbarOn() {
         return travelbarOn;
     }
@@ -317,11 +349,23 @@ public class ResultSetPlayerPrefs {
         return lanternsOn;
     }
 
+    public boolean isPoliceboxTexturesOn() {
+        return policeboxTexturesOn;
+    }
+
     public int getFlightMode() {
         return flightMode;
     }
 
     public boolean isEasyDifficulty() {
         return easyDifficulty;
+    }
+
+    public boolean isAutoPowerUp() {
+        return autoPowerUp;
+    }
+
+    public String getHum() {
+        return hum;
     }
 }

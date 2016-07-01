@@ -72,7 +72,7 @@ public class TARDISDoorCloser {
      */
     @SuppressWarnings("deprecation")
     private void close(Block block, Location inportal, COMPASS dd) {
-        if (plugin.getGeneralKeeper().getDoors().contains(block.getType())) {
+        if (block != null && plugin.getGeneralKeeper().getDoors().contains(block.getType())) {
             byte door_data = block.getData();
             switch (dd) {
                 case NORTH:
@@ -100,16 +100,18 @@ public class TARDISDoorCloser {
         if (inportal != null && plugin.getConfig().getBoolean("preferences.walk_in_tardis")) {
             // get all companion UUIDs
             List<UUID> uuids = new ArrayList<UUID>();
-            uuids.add(uuid);
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("tardis_id", id);
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 2);
             if (rs.resultSet()) {
-                String[] companions = rs.getCompanions().split(":");
-                for (String c : companions) {
-                    if (!c.isEmpty()) {
-                        uuids.add(UUID.fromString(c));
+                if (!plugin.getConfig().getBoolean("preferences.open_door_policy")) {
+                    String[] companions = rs.getTardis().getCompanions().split(":");
+                    for (String c : companions) {
+                        if (!c.isEmpty()) {
+                            uuids.add(UUID.fromString(c));
+                        }
                     }
+                    uuids.add(uuid);
                 }
             }
             // get locations
@@ -119,14 +121,16 @@ public class TARDISDoorCloser {
             ResultSetCurrentLocation rsc = new ResultSetCurrentLocation(plugin, where_exportal);
             rsc.resultSet();
             Location exportal = new Location(rsc.getWorld(), rsc.getX(), rsc.getY(), rsc.getZ());
-            if (rs.getPreset().equals(PRESET.SWAMP)) {
+            if (rs.getTardis().getPreset().equals(PRESET.SWAMP)) {
                 exportal.add(0.0d, 1.0d, 0.0d);
             }
             // unset trackers
-            // players
-            for (UUID u : uuids) {
-                if (plugin.getTrackerKeeper().getMover().contains(u)) {
-                    plugin.getTrackerKeeper().getMover().remove(u);
+            if (!plugin.getConfig().getBoolean("preferences.open_door_policy")) {
+                // players
+                for (UUID u : uuids) {
+                    if (plugin.getTrackerKeeper().getMover().contains(u)) {
+                        plugin.getTrackerKeeper().getMover().remove(u);
+                    }
                 }
             }
             // locations

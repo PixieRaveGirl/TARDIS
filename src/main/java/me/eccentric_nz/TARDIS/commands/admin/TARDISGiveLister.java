@@ -67,12 +67,15 @@ public class TARDISGiveLister {
         items.add(ChatColor.GREEN + "sonic" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Sonic Screwdriver");
         items.add(ChatColor.GREEN + "remote" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Stattenheim Remote");
         items.add(ChatColor.GREEN + "r-key" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "TARDIS Remote Key");
+        items.add(ChatColor.GREEN + "reader" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "TARDIS Biome Reader");
         give_options.put("TARDIS Items", items);
         List<String> item_circuits = new ArrayList<String>();
         item_circuits.add(ChatColor.RED + "l-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_RED + "Locator Circuit");
         item_circuits.add(ChatColor.RED + "m-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_RED + "Materialisation Circuit");
+        item_circuits.add(ChatColor.RED + "generator" + ChatColor.RESET + " - " + ChatColor.DARK_RED + "Sonic Generator");
         item_circuits.add(ChatColor.RED + "oscillator" + ChatColor.RESET + " - " + ChatColor.DARK_RED + "Sonic Oscillator");
         item_circuits.add(ChatColor.RED + "p-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_RED + "Perception Circuit");
+        item_circuits.add(ChatColor.RED + "rift-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_RED + "Rift Circuit");
         item_circuits.add(ChatColor.RED + "s-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_RED + "Stattenheim Circuit");
         give_options.put("Item Circuits", item_circuits);
         List<String> sonic_circuits = new ArrayList<String>();
@@ -94,6 +97,7 @@ public class TARDISGiveLister {
         console_circuits.add(ChatColor.LIGHT_PURPLE + "randomiser-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_PURPLE + "Randomiser Circuit");
         console_circuits.add(ChatColor.LIGHT_PURPLE + "scanner-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_PURPLE + "Scanner Circuit");
         console_circuits.add(ChatColor.LIGHT_PURPLE + "t-circuit" + ChatColor.RESET + " - " + ChatColor.DARK_PURPLE + "Temporal Circuit");
+        console_circuits.add(ChatColor.LIGHT_PURPLE + "telepathic" + ChatColor.RESET + " - " + ChatColor.DARK_PURPLE + "Telepathic Circuit");
         give_options.put("Advanced Console Circuits", console_circuits);
         List<String> disks = new ArrayList<String>();
         disks.add(ChatColor.AQUA + "blank" + ChatColor.RESET + " - " + ChatColor.DARK_AQUA + "Blank Storage Disk");
@@ -111,6 +115,9 @@ public class TARDISGiveLister {
         List<String> accessories = new ArrayList<String>();
         accessories.add(ChatColor.GREEN + "bow-tie" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Bow Tie");
         accessories.add(ChatColor.GREEN + "glasses" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "3-D Glasses");
+        accessories.add(ChatColor.GREEN + "acid-battery" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Acid Battery");
+        accessories.add(ChatColor.GREEN + "rift-manipulator" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Rift Manipulator");
+        accessories.add(ChatColor.GREEN + "rust" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Rust Plague Sword");
         if (plugin.getPM().isPluginEnabled("TARDISSonicBlaster")) {
             accessories.add(ChatColor.GREEN + "blaster" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Sonic Blaster");
             accessories.add(ChatColor.GREEN + "battery" + ChatColor.RESET + " - " + ChatColor.DARK_GREEN + "Blaster Battery");

@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.ResultSetCondenser;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.files.TARDISRoomMap;
 import me.eccentric_nz.TARDIS.rooms.TARDISWalls.Pair;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -172,10 +172,8 @@ public class TARDISRoomCommands implements CommandExecutor {
                     floor = rsp.getFloor();
                 }
                 // get the TARDIS id
-                HashMap<String, Object> wheret = new HashMap<String, Object>();
-                wheret.put("uuid", player.getUniqueId().toString());
-                ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
-                if (rs.resultSet()) {
+                ResultSetTardisID rs = new ResultSetTardisID(plugin);
+                if (rs.fromUUID(player.getUniqueId().toString())) {
                     TARDISMessage.send(player, "CONDENSE_REQUIRE", name);
                     HashMap<String, Integer> item_counts = new HashMap<String, Integer>();
                     for (Map.Entry<String, Integer> entry : blockTypes.entrySet()) {
@@ -204,7 +202,7 @@ public class TARDISRoomCommands implements CommandExecutor {
                         HashMap<String, Object> wherec = new HashMap<String, Object>();
                         wherec.put("tardis_id", rs.getTardis_id());
                         wherec.put("block_data", map.getKey());
-                        ResultSetCondenser rsc = new ResultSetCondenser(plugin, wherec, false);
+                        ResultSetCondenser rsc = new ResultSetCondenser(plugin, wherec);
                         int has = (rsc.resultSet()) ? rsc.getBlock_count() : 0;
                         int required = map.getValue() - has;
                         if (required > 0) {
@@ -245,7 +243,7 @@ public class TARDISRoomCommands implements CommandExecutor {
                 String filepath = plugin.getDataFolder() + File.separator + "user_schematics" + File.separator + lower + ".tschm";
                 File file = new File(filepath);
                 if (!file.exists()) {
-                    TARDISMessage.send(sender, "ROOM_SCHEMATIC_INFO" + lower);
+                    TARDISMessage.send(sender, "ROOM_SCHEMATIC_INFO", lower);
                     return true;
                 }
                 String basepath = plugin.getDataFolder() + File.separator + "user_schematics" + File.separator;

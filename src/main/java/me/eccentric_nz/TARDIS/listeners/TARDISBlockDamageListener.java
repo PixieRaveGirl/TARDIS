@@ -19,13 +19,17 @@ package me.eccentric_nz.TARDIS.listeners;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetBlocks;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
+import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
-import me.eccentric_nz.TARDIS.utility.TARDISHostileDisplacement;
+import me.eccentric_nz.TARDIS.database.data.ReplacedBlock;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.hads.TARDISHostileAction;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -57,7 +61,6 @@ public class TARDISBlockDamageListener implements Listener {
      *
      * @param event a block being damaged
      */
-    @SuppressWarnings("deprecation")
     @EventHandler(ignoreCancelled = true)
     public void onPoliceBoxDamage(BlockDamageEvent event) {
         Player p = event.getPlayer();
@@ -67,30 +70,30 @@ public class TARDISBlockDamageListener implements Listener {
         where.put("location", l);
         ResultSetBlocks rsb = new ResultSetBlocks(plugin, where, false);
         if (rsb.resultSet()) {
-            int id = rsb.getTardis_id();
+            ReplacedBlock rb = rsb.getReplacedBlock();
+            int id = rb.getTardis_id();
             if (p.hasPermission("tardis.sonic.admin")) {
                 String[] split = plugin.getRecipesConfig().getString("shaped.Sonic Screwdriver.result").split(":");
                 Material sonic = Material.valueOf(split[0]);
-                ItemStack is = p.getItemInHand();
+                ItemStack is = event.getItemInHand();
                 if (is != null && is.getType().equals(sonic)) {
                     // unhide TARDIS
                     unhide(id, p);
-                    return;
                 }
             }
             boolean m = false;
             boolean isDoor = false;
-            if (plugin.getConfig().getBoolean("allow.hads") && !plugin.getTrackerKeeper().getInVortex().contains(id) && isOwnerOnline(id)) {
+            if (plugin.getConfig().getBoolean("allow.hads") && !plugin.getTrackerKeeper().getInVortex().contains(id) && isOwnerOnline(id) && !plugin.getTrackerKeeper().getDispersedTARDII().contains(id)) {
                 if (doors.contains(b.getType())) {
                     if (isOwner(id, p.getUniqueId().toString())) {
                         isDoor = true;
                     }
                 }
-                if (!isDoor && rsb.isPolice_box()) {
-                    int damage = (plugin.getTrackerKeeper().getDamage().containsKey(id)) ? plugin.getTrackerKeeper().getDamage().get(Integer.valueOf(id)) : 0;
+                if (!isDoor && rb.getPolice_box() == 1) {
+                    int damage = (plugin.getTrackerKeeper().getDamage().containsKey(id)) ? plugin.getTrackerKeeper().getDamage().get(id) : 0;
                     plugin.getTrackerKeeper().getDamage().put(id, damage + 1);
                     if (damage == plugin.getConfig().getInt("preferences.hads_damage")) {
-                        new TARDISHostileDisplacement(plugin).moveTARDIS(id, p);
+                        new TARDISHostileAction(plugin).processAction(id, p);
                         m = true;
                     }
                     if (!m) {
@@ -108,16 +111,28 @@ public class TARDISBlockDamageListener implements Listener {
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", id);
         where.put("uuid", uuid);
-        ResultSetTardis rst = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rst = new ResultSetTardis(plugin, where, "", false, 0);
         return rst.resultSet();
     }
 
     private boolean isOwnerOnline(int id) {
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", id);
-        ResultSetTardis rst = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rst = new ResultSetTardis(plugin, where, "", false, 0);
         if (rst.resultSet()) {
-            return plugin.getServer().getOfflinePlayer(rst.getUuid()).isOnline();
+            Tardis tardis = rst.getTardis();
+            if (!tardis.isTardis_init()) {
+                return false;
+            }
+            UUID ownerUUID = tardis.getUuid();
+            HashMap<String, Object> wherep = new HashMap<String, Object>();
+            wherep.put("uuid", ownerUUID.toString());
+            ResultSetPlayerPrefs rsp = new ResultSetPlayerPrefs(plugin, wherep);
+            boolean hads_on = true;
+            if (rsp.resultSet()) {
+                hads_on = rsp.isHadsOn();
+            }
+            return (plugin.getServer().getOfflinePlayer(ownerUUID).isOnline() && hads_on);
         } else {
             return false;
         }
@@ -126,13 +141,13 @@ public class TARDISBlockDamageListener implements Listener {
     private void unhide(final int id, Player player) {
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", id);
-        ResultSetTardis rst = new ResultSetTardis(plugin, where, "", false);
-        if (rst.resultSet() && rst.isHidden()) {
-            Player p = (Player) plugin.getServer().getOfflinePlayer(rst.getUuid());
+        ResultSetTardis rst = new ResultSetTardis(plugin, where, "", false, 2);
+        if (rst.resultSet() && rst.getTardis().isHidden()) {
+//            Player p = (Player) plugin.getServer().getOfflinePlayer(rst.getUuid());
             // unhide this tardis
             boolean cham = false;
             if (plugin.getConfig().getBoolean("travel.chameleon")) {
-                cham = rst.isChamele_on();
+                cham = rst.getTardis().isChamele_on();
             }
             HashMap<String, Object> wherecl = new HashMap<String, Object>();
             wherecl.put("tardis_id", id);
@@ -144,20 +159,20 @@ public class TARDISBlockDamageListener implements Listener {
             HashMap<String, Object> wheret = new HashMap<String, Object>();
             wheret.put("tardis_id", id);
             QueryFactory qf = new QueryFactory(plugin);
-            final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-            pbd.setChameleon(cham);
-            pbd.setDirection(rsc.getDirection());
-            pbd.setLocation(l);
-            pbd.setMalfunction(false);
-            pbd.setOutside(false);
-            pbd.setPlayer(player);
-            pbd.setRebuild(true);
-            pbd.setSubmarine(rsc.isSubmarine());
-            pbd.setTardisID(id);
+            final BuildData bd = new BuildData(plugin, player.getUniqueId().toString());
+            bd.setChameleon(cham);
+            bd.setDirection(rsc.getDirection());
+            bd.setLocation(l);
+            bd.setMalfunction(false);
+            bd.setOutside(false);
+            bd.setPlayer(player);
+            bd.setRebuild(true);
+            bd.setSubmarine(rsc.isSubmarine());
+            bd.setTardisID(id);
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 @Override
                 public void run() {
-                    plugin.getPresetBuilder().buildPreset(pbd);
+                    plugin.getPresetBuilder().buildPreset(bd);
                 }
             }, 5L);
             // set hidden to false

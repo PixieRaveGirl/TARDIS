@@ -27,10 +27,8 @@ import me.eccentric_nz.TARDIS.database.ResultSetLamps;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
-import me.eccentric_nz.TARDIS.utility.TARDISLocationGetters;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 /**
@@ -45,22 +43,10 @@ import org.bukkit.entity.Player;
 public class TARDISMalfunction {
 
     private final TARDIS plugin;
-    private final int id;
-    private final Player p;
-    private final COMPASS dir;
-    private final Location handbrake_loc;
-    private final String eps;
-    private final String creeper;
     private final Random rand;
 
-    public TARDISMalfunction(TARDIS plugin, int id, Player p, COMPASS dir, Location handbrake_loc, String eps, String creeper) {
+    public TARDISMalfunction(TARDIS plugin) {
         this.plugin = plugin;
-        this.id = id;
-        this.p = p;
-        this.dir = dir;
-        this.handbrake_loc = handbrake_loc;
-        this.eps = eps;
-        this.creeper = creeper;
         this.rand = new Random();
     }
 
@@ -70,15 +56,12 @@ public class TARDISMalfunction {
             int chance = 100 - plugin.getConfig().getInt("preferences.malfunction");
             if (rand.nextInt(100) > chance) {
                 mal = true;
-                if (plugin.getTrackerKeeper().getRescue().containsKey(id)) {
-                    plugin.getTrackerKeeper().getRescue().remove(id);
-                }
             }
         }
         return mal;
     }
 
-    public Location getMalfunction() {
+    public Location getMalfunction(int id, Player p, COMPASS dir, Location handbrake_loc, String eps, String creeper) {
         Location l;
         // get cuurent TARDIS preset location
         HashMap<String, Object> wherecl = new HashMap<String, Object>();
@@ -107,23 +90,16 @@ public class TARDISMalfunction {
             l = null;
         }
         if (l != null) {
-            doMalfunction(l);
+            doMalfunction(l, id, p, eps, creeper, handbrake_loc);
         }
         return l;
     }
 
-    public void doMalfunction(Location l) {
+    public void doMalfunction(Location l, int id, Player p, String eps, String creeper, Location handbrake) {
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", id);
         ResultSetLamps rsl = new ResultSetLamps(plugin, where, true);
-        List<Block> lamps = new ArrayList<Block>();
         if (rsl.resultSet()) {
-            // flicker lights
-            ArrayList<HashMap<String, String>> data = rsl.getData();
-            for (HashMap<String, String> map : data) {
-                Location loc = TARDISLocationGetters.getLocationFromDB(map.get("location"), 0.0F, 0.0F);
-                lamps.add(loc.getBlock());
-            }
             // get player prefs
             HashMap<String, Object> wherep = new HashMap<String, Object>();
             wherep.put("uuid", p.getUniqueId().toString());
@@ -146,9 +122,10 @@ public class TARDISMalfunction {
                     plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, EPS_runnable, 220L);
                 }
                 Material light = (rsp.isLanternsOn()) ? Material.SEA_LANTERN : Material.REDSTONE_LAMP_ON;
+                // flicker lights
                 final long start = System.currentTimeMillis() + 10000;
-                TARDISLampsRunnable runnable = new TARDISLampsRunnable(plugin, lamps, start, light, rsp.isWoolLightsOn());
-                runnable.setHandbrake(handbrake_loc);
+                TARDISLampsRunnable runnable = new TARDISLampsRunnable(plugin, rsl.getData(), start, light, rsp.isWoolLightsOn());
+                runnable.setHandbrake(handbrake);
                 int taskID = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, runnable, 10L, 10L);
                 runnable.setTask(taskID);
             }

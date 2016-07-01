@@ -25,6 +25,7 @@ import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetRepeaters;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
+import me.eccentric_nz.TARDIS.flight.TARDISLand;
 import me.eccentric_nz.TARDIS.travel.TARDISTimeTravel;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
@@ -173,18 +174,21 @@ public class TARDISRandomButton {
                     }
                     if (isTL == true) {
                         TARDISMessage.send(player, "DEST", dchat);
-                    } else {
-                        if (plugin.getServer().getPlayer(ownerUUID) != null) {
-                            TARDISMessage.send(plugin.getServer().getPlayer(ownerUUID), "DEST", dchat);
-                        }
+                    } else if (plugin.getServer().getPlayer(ownerUUID) != null) {
+                        TARDISMessage.send(plugin.getServer().getPlayer(ownerUUID), "DEST", dchat);
                     }
                     HashMap<String, Object> wherel = new HashMap<String, Object>();
                     wherel.put("tardis_id", id);
-                    new QueryFactory(plugin).doUpdate("next", set, wherel);
+                    new QueryFactory(plugin).doSyncUpdate("next", set, wherel);
                     plugin.getTrackerKeeper().getHasDestination().put(id, cost);
                     if (plugin.getTrackerKeeper().getRescue().containsKey(id)) {
                         plugin.getTrackerKeeper().getRescue().remove(id);
                     }
+                    if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                        new TARDISLand(plugin, id, player).exitVortex();
+                    }
+                } else if (plugin.getConfig().getBoolean("travel.no_destination_malfunctions")) {
+                    plugin.getTrackerKeeper().getMalfunction().put(id, true);
                 } else {
                     TARDISMessage.send(player, "PROTECTED");
                 }

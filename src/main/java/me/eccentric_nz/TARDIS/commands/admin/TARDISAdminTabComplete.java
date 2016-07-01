@@ -23,6 +23,7 @@ import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.commands.TARDISCompleter;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.utility.TARDISWorldGuardFlag;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -33,20 +34,24 @@ import org.bukkit.command.TabCompleter;
 public class TARDISAdminTabComplete extends TARDISCompleter implements TabCompleter {
 
     private final TARDIS plugin;
-    private final ImmutableList<String> DIFFICULTY_SUBS = ImmutableList.of("easy", "hard");
     private final ImmutableList<String> BOOL_SUBS = ImmutableList.of("true", "false");
-    private final ImmutableList<String> DB_SUBS = ImmutableList.of("mysql", "sqlite");
-    private final ImmutableList<String> TIPS_SUBS = ImmutableList.of("400", "800", "1200", "1600");
-    private final ImmutableList<String> TOWNY_SUBS = ImmutableList.of("none", "wilderness", "town", "nation");
-    private final ImmutableList<String> SIEGE_SUBS = ImmutableList.of("enabled", "breeding", "growth", "butcher", "creeper", "healing", "texture", "true", "false");
-    private final ImmutableList<String> FLAG_SUBS;
-    private final ImmutableList<String> PRESETS;
-    private final ImmutableList<String> CONFIG_SUBS = ImmutableList.of("worlds", "rechargers", "storage", "creation", "police_box", "travel", "preferences", "allow", "growth", "rooms");
     private final ImmutableList<String> COLOURS = ImmutableList.of("AQUA", "BLACK", "BLUE", "DARK_AQUA", "DARK_BLUE", "DARK_GRAY", "DARK_GREEN", "DARK_PURPLE", "DARK_RED", "GOLD", "GRAY", "GREEN", "LIGHT_PURPLE", "RED", "WHITE", "YELLOW");
-    private final ImmutableList<String> SONICS = ImmutableList.of("mark_1", "mark_2", "mark_3", "mark_4", "eighth", "ninth", "ninth_open", "tenth", "tenth_open", "eleventh", "eleventh_open", "master", "sarah_jane", "river_song", "war");
+    private final ImmutableList<String> CONFIG_SUBS = ImmutableList.of("worlds", "rechargers", "storage", "creation", "police_box", "travel", "preferences", "allow", "growth", "rooms");
+    private final ImmutableList<String> DB_SUBS = ImmutableList.of("mysql", "sqlite");
+    private final ImmutableList<String> DIFFICULTY_SUBS = ImmutableList.of("easy", "medium", "hard");
+    private final ImmutableList<String> FLAG_SUBS;
     private final ImmutableList<String> KEYS = ImmutableList.of("first", "second", "third", "fifth", "seventh", "ninth", "tenth", "eleventh", "susan", "rose", "sally", "perception", "gold");
     private final ImmutableList<String> LANG_SUBS = ImmutableList.of("ar", "bg", "ca", "zh", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "ht", "he", "hi", "mww", "hu", "id", "it", "ja", "ko", "lv", "lt", "ms", "no", "fa", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "th", "tr", "uk", "ur", "vi");
+    private final ImmutableList<String> PRESETS;
+    private final ImmutableList<String> REGION_SUBS = ImmutableList.of("entry", "exit");
     private final ImmutableList<String> ROOT_SUBS;
+    private final ImmutableList<String> SIEGE_SUBS = ImmutableList.of("enabled", "breeding", "growth", "butcher", "creeper", "healing", "texture", "true", "false");
+    private final ImmutableList<String> SONICS = ImmutableList.of("mark_1", "mark_2", "mark_3", "mark_4", "eighth", "ninth", "ninth_open", "tenth", "tenth_open", "eleventh", "eleventh_open", "master", "sarah_jane", "river_song", "war");
+    private final ImmutableList<String> TIPS_SUBS = ImmutableList.of("400", "800", "1200", "1600");
+    private final ImmutableList<String> TOWNY_SUBS = ImmutableList.of("none", "wilderness", "town", "nation");
+    private final ImmutableList<String> VORTEX_SUBS = ImmutableList.of("kill", "teleport");
+    private final ImmutableList<String> LIST_SUBS = ImmutableList.of("abandoned", "portals", "save");
+    private final ImmutableList<String> WORLD_SUBS;
 
     public TARDISAdminTabComplete(TARDIS plugin) {
         this.plugin = plugin;
@@ -61,6 +66,11 @@ public class TARDISAdminTabComplete extends TARDISCompleter implements TabComple
         }
         this.PRESETS = ImmutableList.copyOf(tmpPresets);
         this.ROOT_SUBS = ImmutableList.copyOf(combineLists());
+        List<String> worlds = new ArrayList<String>();
+        for (World w : plugin.getServer().getWorlds()) {
+            worlds.add(w.getName());
+        }
+        WORLD_SUBS = ImmutableList.copyOf(worlds);
     }
 
     @Override
@@ -70,17 +80,29 @@ public class TARDISAdminTabComplete extends TARDISCompleter implements TabComple
             return partial(args[0], ROOT_SUBS);
         } else if (args.length == 2) {
             String sub = args[0];
+            if (sub.equals("include") || sub.equals("exclude")) {
+                return partial(lastArg, WORLD_SUBS);
+            }
             if (sub.equals("config")) {
                 return partial(lastArg, CONFIG_SUBS);
             }
             if (sub.equals("difficulty")) {
                 return partial(lastArg, DIFFICULTY_SUBS);
             }
+            if (sub.equals("list")) {
+                return partial(lastArg, LIST_SUBS);
+            }
             if (sub.equals("respect_towny")) {
                 return partial(lastArg, TOWNY_SUBS);
             }
             if (sub.equals("respect_worldguard")) {
                 return partial(lastArg, FLAG_SUBS);
+            }
+            if (sub.equals("region_flag")) {
+                return partial(lastArg, REGION_SUBS);
+            }
+            if (sub.equals("vortex_fall")) {
+                return partial(lastArg, VORTEX_SUBS);
             }
             if (sub.equals("sign_colour")) {
                 return partial(lastArg, COLOURS);
@@ -106,7 +128,8 @@ public class TARDISAdminTabComplete extends TARDISCompleter implements TabComple
             if (sub.equals("tips_limit")) {
                 return partial(lastArg, TIPS_SUBS);
             }
-            if (sub.equals("delete") || sub.equals("enter") || sub.equals("purge") || sub.equals("desiege")) { // return null to default to online player name matching
+            if (sub.equals("delete") || sub.equals("enter") || sub.equals("purge") || sub.equals("desiege")) {
+                // return null to default to online player name matching
                 return null;
             } else {
                 return partial(lastArg, BOOL_SUBS);

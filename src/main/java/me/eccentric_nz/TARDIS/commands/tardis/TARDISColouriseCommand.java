@@ -20,6 +20,7 @@ import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.SCHEMATIC;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.entity.Player;
@@ -53,12 +54,13 @@ public class TARDISColouriseCommand {
         // must have a TARDIS
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("uuid", player.getUniqueId().toString());
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
         if (!rs.resultSet()) {
             TARDISMessage.send(player, "NOT_A_TIMELORD");
             return true;
         }
-        SCHEMATIC console = rs.getSchematic();
+        Tardis tardis = rs.getTardis();
+        SCHEMATIC console = tardis.getSchematic();
         if (!console.hasBeacon()) {
             TARDISMessage.send(player, "COLOUR_NOT_VALID");
             return true;
@@ -67,7 +69,7 @@ public class TARDISColouriseCommand {
             TARDISMessage.send(player, "COLOUR_SONIC");
             return true;
         }
-        int ownerid = rs.getTardis_id();
+        int ownerid = tardis.getTardis_id();
         HashMap<String, Object> wheret = new HashMap<String, Object>();
         wheret.put("uuid", player.getUniqueId().toString());
         ResultSetTravellers rst = new ResultSetTravellers(plugin, wheret, false);

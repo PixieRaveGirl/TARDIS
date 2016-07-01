@@ -33,8 +33,10 @@ import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.DISK_CIRCUIT;
 import me.eccentric_nz.TARDIS.enumeration.FLAG;
+import me.eccentric_nz.TARDIS.flight.TARDISLand;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISStaticUtils;
 import org.bukkit.Location;
@@ -156,15 +158,18 @@ public class TARDISTerminalListener implements Listener {
                                 set.put("submarine", (terminalSub.containsKey(uuid)) ? 1 : 0);
                                 HashMap<String, Object> wheret = new HashMap<String, Object>();
                                 wheret.put("tardis_id", terminalIDs.get(uuid));
-                                new QueryFactory(plugin).doUpdate("next", set, wheret);
+                                new QueryFactory(plugin).doSyncUpdate("next", set, wheret);
                                 plugin.getTrackerKeeper().getHasDestination().put(terminalIDs.get(uuid), plugin.getArtronConfig().getInt("travel"));
                                 if (plugin.getTrackerKeeper().getRescue().containsKey(terminalIDs.get(uuid))) {
                                     plugin.getTrackerKeeper().getRescue().remove(terminalIDs.get(uuid));
                                 }
                                 close(player);
-                                TARDISMessage.send(player, "DEST_SET", true);
+                                TARDISMessage.send(player, "DEST_SET", !plugin.getTrackerKeeper().getDestinationVortex().containsKey(terminalIDs.get(uuid)));
+                                if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(terminalIDs.get(uuid))) {
+                                    new TARDISLand(plugin, terminalIDs.get(uuid), player).exitVortex();
+                                }
                                 // damage the circuit if configured
-                                if (plugin.getConfig().getBoolean("circuits.damage") && plugin.getConfig().getString("preferences.difficulty").equals("hard") && plugin.getConfig().getInt("circuits.uses.input") > 0) {
+                                if (plugin.getConfig().getBoolean("circuits.damage") && !plugin.getDifficulty().equals(DIFFICULTY.EASY) && plugin.getConfig().getInt("circuits.uses.input") > 0) {
                                     TARDISCircuitChecker tcc = new TARDISCircuitChecker(plugin, terminalIDs.get(uuid));
                                     tcc.getCircuits();
                                     // decrement uses

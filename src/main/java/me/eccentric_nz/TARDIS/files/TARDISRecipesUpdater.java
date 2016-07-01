@@ -86,7 +86,73 @@ public class TARDISRecipesUpdater {
         // fix lore
         recipes_config.set("shaped.Stattenheim Remote.lore", "Right-click block~to call TARDIS");
         recipes_config.set("shaped.Artron Storage Cell.lore", "Charge Level~0");
-        //
+        if (!recipes_config.contains("shaped.Rust Plague Sword")) {
+            recipes_config.set("shaped.Rust Plague Sword.easy_shape", "RIR,RIR,-S-");
+            recipes_config.set("shaped.Rust Plague Sword.easy_ingredients.R", "LAVA_BUCKET");
+            recipes_config.set("shaped.Rust Plague Sword.easy_ingredients.I", "IRON_INGOT");
+            recipes_config.set("shaped.Rust Plague Sword.easy_ingredients.S", "STICK");
+            recipes_config.set("shaped.Rust Plague Sword.hard_shape", "RIR,RIR,DSD");
+            recipes_config.set("shaped.Rust Plague Sword.hard_ingredients.R", "LAVA_BUCKET");
+            recipes_config.set("shaped.Rust Plague Sword.hard_ingredients.I", "IRON_INGOT");
+            recipes_config.set("shaped.Rust Plague Sword.hard_ingredients.D", "DIAMOND");
+            recipes_config.set("shaped.Rust Plague Sword.hard_ingredients.S", "STICK");
+            recipes_config.set("shaped.Rust Plague Sword.result", "IRON_SWORD");
+            recipes_config.set("shaped.Rust Plague Sword.amount", 1);
+            recipes_config.set("shaped.Rust Plague Sword.lore", "Dalek Virus Dispenser");
+        }
+        if (!recipes_config.contains("shaped.Acid Battery")) {
+            recipes_config.set("shaped.Acid Battery.easy_shape", "-A-,ARA,-A-");
+            recipes_config.set("shaped.Acid Battery.easy_ingredients.A", "WATER_BUCKET");
+            recipes_config.set("shaped.Acid Battery.easy_ingredients.R", "REDSTONE");
+            recipes_config.set("shaped.Acid Battery.hard_shape", "-A-,ARA,-A-");
+            recipes_config.set("shaped.Acid Battery.hard_ingredients.A", "WATER_BUCKET");
+            recipes_config.set("shaped.Acid Battery.hard_ingredients.R", "REDSTONE_BLOCK");
+            recipes_config.set("shaped.Acid Battery.result", "NETHER_BRICK_ITEM");
+            recipes_config.set("shaped.Acid Battery.amount", 1);
+            recipes_config.set("shaped.Acid Battery.lore", "");
+            //
+            recipes_config.set("shaped.Rift Circuit.easy_shape", "-D-,DND,-D-");
+            recipes_config.set("shaped.Rift Circuit.easy_ingredients.D", "DIAMOND");
+            recipes_config.set("shaped.Rift Circuit.easy_ingredients.N", "NETHER_STAR");
+            recipes_config.set("shaped.Rift Circuit.hard_shape", "-D-,DND,-D-");
+            recipes_config.set("shaped.Rift Circuit.hard_ingredients.D", "DIAMOND");
+            recipes_config.set("shaped.Rift Circuit.hard_ingredients.N", "NETHER_STAR");
+            recipes_config.set("shaped.Rift Circuit.result", "MAP:1983");
+            recipes_config.set("shaped.Rift Circuit.amount", 1);
+            recipes_config.set("shaped.Rift Circuit.lore", "");
+            //
+            recipes_config.set("shaped.Rift Manipulator.easy_shape", "-A-,ACA,RAR");
+            recipes_config.set("shaped.Rift Manipulator.easy_ingredients.A", "NETHER_BRICK_ITEM");
+            recipes_config.set("shaped.Rift Manipulator.easy_ingredients.C", "MAP:1983");
+            recipes_config.set("shaped.Rift Manipulator.easy_ingredients.R", "REDSTONE");
+            recipes_config.set("shaped.Rift Manipulator.hard_shape", "-A-,ACA,NAN");
+            recipes_config.set("shaped.Rift Manipulator.hard_ingredients.A", "NETHER_BRICK_ITEM");
+            recipes_config.set("shaped.Rift Manipulator.hard_ingredients.C", "MAP:1983");
+            recipes_config.set("shaped.Rift Manipulator.hard_ingredients.N", "NETHER_STAR");
+            recipes_config.set("shaped.Rift Manipulator.result", "BEACON");
+            recipes_config.set("shaped.Rift Manipulator.amount", 1);
+            recipes_config.set("shaped.Rift Manipulator.lore", "");
+            i++;
+        }
+        if (!recipes_config.contains("shaped.Sonic Generator")) {
+            recipes_config.set("shaped.Sonic Generator.easy_shape", "-S-,-F-,GRG");
+            recipes_config.set("shaped.Sonic Generator.easy_ingredients.G", "GOLD_NUGGET");
+            recipes_config.set("shaped.Sonic Generator.easy_ingredients.R", "REDSTONE");
+            recipes_config.set("shaped.Sonic Generator.easy_ingredients.F", "FLOWER_POT_ITEM");
+            recipes_config.set("shaped.Sonic Generator.easy_ingredients.S", "BLAZE_ROD");
+            recipes_config.set("shaped.Sonic Generator.hard_shape", "-S-,-F-,GRG");
+            recipes_config.set("shaped.Sonic Generator.hard_ingredients.G", "GOLD_INGOT");
+            recipes_config.set("shaped.Sonic Generator.hard_ingredients.R", "REDSTONE_BLOCK");
+            recipes_config.set("shaped.Sonic Generator.hard_ingredients.F", "FLOWER_POT_ITEM");
+            recipes_config.set("shaped.Sonic Generator.hard_ingredients.S", "BLAZE_ROD");
+            recipes_config.set("shaped.Sonic Generator.result", "FLOWER_POT_ITEM");
+            recipes_config.set("shaped.Sonic Generator.amount", 1);
+            recipes_config.set("shaped.Sonic Generator.lore", "");
+            i++;
+        } else {
+            recipes_config.set("shaped.Sonic Generator.easy_shape", "-S-,-F-,GRG");
+            recipes_config.set("shaped.Sonic Generator.hard_shape", "-S-,-F-,GRG");
+        }
         if (!recipes_config.contains("shaped.TARDIS Remote Key")) {
             recipes_config.set("shaped.TARDIS Remote Key.easy_shape", "RCR,-K-,-T-");
             recipes_config.set("shaped.TARDIS Remote Key.easy_ingredients.R", "REDSTONE");
@@ -101,6 +167,7 @@ public class TARDISRecipesUpdater {
             recipes_config.set("shaped.TARDIS Remote Key.result", "GOLD_NUGGET");
             recipes_config.set("shaped.TARDIS Remote Key.amount", 1);
             recipes_config.set("shaped.TARDIS Remote Key.lore", "Deadlock & unlock~Hide & rebuild");
+            i++;
         } else if (recipes_config.getString("shaped.TARDIS Remote Key.easy_ingredients.T").equals("REDSTONE_TORCH")) {
             recipes_config.set("shaped.TARDIS Remote Key.easy_ingredients.T", "REDSTONE_TORCH_ON");
         }
@@ -149,6 +216,25 @@ public class TARDISRecipesUpdater {
             recipes_config.set("shaped.Fob Watch.result", "WATCH");
             recipes_config.set("shaped.Fob Watch.amount", 1);
             recipes_config.set("shaped.Fob Watch.lore", "");
+            i++;
+        }
+        if (!recipes_config.contains("shaped.TARDIS Biome Reader")) {
+            recipes_config.set("shaped.TARDIS Biome Reader.easy_shape", "---,-C-,SDT");
+            recipes_config.set("shaped.TARDIS Biome Reader.easy_ingredients.C", "MAP:1972");
+            recipes_config.set("shaped.TARDIS Biome Reader.easy_ingredients.S", "SAND");
+            recipes_config.set("shaped.TARDIS Biome Reader.easy_ingredients.D", "DIRT");
+            recipes_config.set("shaped.TARDIS Biome Reader.easy_ingredients.T", "STONE");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_shape", "-C-,SDT,LWN");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_ingredients.C", "MAP:1972");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_ingredients.S", "SAND");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_ingredients.D", "DIRT");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_ingredients.T", "STONE");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_ingredients.L", "CLAY");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_ingredients.W", "SNOW_BLOCK");
+            recipes_config.set("shaped.TARDIS Biome Reader.hard_ingredients.N", "NETHERRACK");
+            recipes_config.set("shaped.TARDIS Biome Reader.result", "CLAY_BRICK");
+            recipes_config.set("shaped.TARDIS Biome Reader.amount", 1);
+            recipes_config.set("shaped.TARDIS Biome Reader.lore", "");
             i++;
         }
         if (!recipes_config.contains("shaped.Jammy Dodger")) {
@@ -214,16 +300,38 @@ public class TARDISRecipesUpdater {
             recipes_config.set("shaped.TARDIS Invisibility Circuit.easy_ingredients.D", "DIAMOND");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.easy_ingredients.P", "MAP:1978");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.easy_ingredients.E", "EMERALD");
-            recipes_config.set("shaped.TARDIS Invisibility Circuit.easy_ingredients.W", "POTION:8206");
+            recipes_config.set("shaped.TARDIS Invisibility Circuit.easy_ingredients.W", "POTION");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.hard_shape", "-D-,P-E,-W-");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.hard_ingredients.D", "DIAMOND");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.hard_ingredients.P", "MAP:1978");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.hard_ingredients.E", "EMERALD");
-            recipes_config.set("shaped.TARDIS Invisibility Circuit.hard_ingredients.W", "POTION:8270");
+            recipes_config.set("shaped.TARDIS Invisibility Circuit.hard_ingredients.W", "POTION");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.result", "MAP:1981");
             recipes_config.set("shaped.TARDIS Invisibility Circuit.amount", 1);
             recipes_config.set("shaped.TARDIS Invisibility Circuit.lore", "Uses left~5");
             i++;
+        } else {
+            if (recipes_config.getString("shaped.TARDIS Invisibility Circuit.easy_ingredients.W").equals("POTION:8206")) {
+                recipes_config.set("shaped.TARDIS Invisibility Circuit.easy_ingredients.W", "POTION");
+            }
+            if (recipes_config.getString("shaped.TARDIS Invisibility Circuit.hard_ingredients.W").equals("POTION:8270")) {
+                recipes_config.set("shaped.TARDIS Invisibility Circuit.hard_ingredients.W", "POTION");
+            }
+        }
+        if (!recipes_config.contains("shaped.TARDIS Telepathic Circuit")) {
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.easy_shape", "-S-,SES,-S-");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.easy_ingredients.S", "SLIME_BALL");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.easy_ingredients.E", "EMERALD");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.hard_shape", "-S-,SPS,ESE");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.hard_ingredients.S", "SLIME_BALL");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.hard_ingredients.P", "POTION");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.hard_ingredients.E", "EMERALD");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.result", "DAYLIGHT_DETECTOR");
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.amount", 1);
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.lore", "Allow companions to~use TARDIS commands");
+            i++;
+        } else if (recipes_config.getString("shaped.TARDIS Telepathic Circuit.hard_ingredients.P").equals("POTION:373")) {
+            recipes_config.set("shaped.TARDIS Telepathic Circuit.hard_ingredients.P", "POTION");
         }
         if (!recipes_config.contains("shaped.Painter Circuit")) {
             recipes_config.set("shaped.Painter Circuit.easy_shape", "-I-,DGD,-I-");
@@ -238,11 +346,9 @@ public class TARDISRecipesUpdater {
             recipes_config.set("shaped.Painter Circuit.amount", 1);
             recipes_config.set("shaped.Painter Circuit.lore", "");
             i++;
-        } else {
+        } else if (recipes_config.get("shaped.Painter Circuit.hard_shape").equals("-B-,-F-,-B-")) {
             // fix the hard recipe if necessary
-            if (recipes_config.get("shaped.Painter Circuit.hard_shape").equals("-B-,-F-,-B-")) {
-                recipes_config.set("shaped.Painter Circuit.hard_shape", "-I-,DGD,-I-");
-            }
+            recipes_config.set("shaped.Painter Circuit.hard_shape", "-I-,DGD,-I-");
         }
         if (!recipes_config.contains("shapeless.Painter Upgrade")) {
             recipes_config.set("shapeless.Painter Upgrade.recipe", "BLAZE_ROD,MAP:1979");

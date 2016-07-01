@@ -146,7 +146,7 @@ public class TARDISDoorListener {
                     if (p.isPlayerTimeRelative()) {
                         setTemporalLocation(p, -1);
                     }
-                    TARDISSounds.playTARDISSound(p.getLocation(), p, "tardis_hum");
+                    TARDISSounds.playTARDISHum(p);
                 }
                 // give a key
                 giveKey(p);
@@ -160,7 +160,7 @@ public class TARDISDoorListener {
      * @param w the world to check
      * @return true if the world is a SURVIVAL world, otherwise false
      */
-    private boolean checkSurvival(World w) {
+    public boolean checkSurvival(World w) {
         boolean bool = false;
         if (plugin.isMVOnServer()) {
             bool = plugin.getMVHelper().isWorldSurvival(w);
@@ -365,23 +365,23 @@ public class TARDISDoorListener {
         switch (sound) {
             case 1:
                 if (!m) {
-                    TARDISSounds.playTARDISSound(l, p, "tardis_door_open");
+                    TARDISSounds.playTARDISSound(l, "tardis_door_open");
                 } else {
-                    p.playSound(p.getLocation(), Sound.DOOR_OPEN, 1.0F, 1.0F);
+                    p.playSound(p.getLocation(), Sound.BLOCK_IRON_DOOR_OPEN, 1.0F, 1.0F);
                 }
                 break;
             case 2:
                 if (!m) {
-                    TARDISSounds.playTARDISSound(l, p, "tardis_door_close");
+                    TARDISSounds.playTARDISSound(l, "tardis_door_close");
                 } else {
-                    p.playSound(p.getLocation(), Sound.DOOR_OPEN, 1.0F, 1.0F);
+                    p.playSound(p.getLocation(), Sound.BLOCK_IRON_DOOR_OPEN, 1.0F, 1.0F);
                 }
                 break;
             case 3:
                 if (!m) {
-                    TARDISSounds.playTARDISSound(l, p, "tardis_enter");
+                    TARDISSounds.playTARDISSound(l, "tardis_enter");
                 } else {
-                    p.playSound(p.getLocation(), Sound.ENDERMAN_TELEPORT, 1.0F, 1.0F);
+                    p.playSound(p.getLocation(), Sound.ENTITY_ENDERMEN_TELEPORT, 1.0F, 1.0F);
                 }
                 break;
             default:

@@ -38,7 +38,7 @@ import me.eccentric_nz.TARDIS.utility.recalculators.TARDISTrapdoorRecalculator;
  */
 public class TARDISChameleonPreset {
 
-    private static final List<Integer> problemBlocks = Arrays.asList(50, 53, 63, 64, 66, 67, 68, 69, 71, 77, 91, 96, 99, 106, 108, 109, 114, 128, 134, 135, 136, 143, 145, 156, 163, 164, 193, 194, 195, 196, 197);
+    private static final List<Integer> PROBLEM_BLOCKS = Arrays.asList(50, 53, 63, 64, 66, 67, 68, 69, 71, 77, 91, 96, 99, 106, 108, 109, 114, 128, 134, 135, 136, 143, 145, 156, 163, 164, 193, 194, 195, 196, 197, 203);
     public final TARDISAndesitePreset andesite;
     public final TARDISAngelDownPreset angeld;
     public final TARDISAngelUpPreset angelu;
@@ -46,6 +46,7 @@ public class TARDISChameleonPreset {
     public final TARDISCakePreset cake;
     public final TARDISCandyCanePreset candy;
     public final TARDISChalicePreset chalice;
+    public final TARDISChorusPreset chorus;
     public final TARDISColumnPreset column;
     public final TARDISCreepyPreset creepy;
     public final TARDISDesertPreset desert;
@@ -60,6 +61,7 @@ public class TARDISChameleonPreset {
     public final TARDISInvisiblePreset invisible;
     public final TARDISJailPreset jail;
     public final TARDISJunglePreset jungle;
+    public final TARDISJunkPreset junk;
     public final TARDISLampPostPreset lamp;
     public final TARDISLibraryPreset library;
     public final TARDISLighthousePreset lighthouse;
@@ -101,6 +103,7 @@ public class TARDISChameleonPreset {
         this.cake = new TARDISCakePreset();
         this.candy = new TARDISCandyCanePreset();
         this.chalice = new TARDISChalicePreset();
+        this.chorus = new TARDISChorusPreset();
         this.column = new TARDISColumnPreset();
         this.creepy = new TARDISCreepyPreset();
         this.desert = new TARDISDesertPreset();
@@ -116,6 +119,7 @@ public class TARDISChameleonPreset {
         this.invisible = new TARDISInvisiblePreset();
         this.jail = new TARDISJailPreset();
         this.jungle = new TARDISJunglePreset();
+        this.junk = new TARDISJunkPreset();
         this.lamp = new TARDISLampPostPreset();
         this.library = new TARDISLibraryPreset();
         this.lighthouse = new TARDISLighthousePreset();
@@ -156,6 +160,7 @@ public class TARDISChameleonPreset {
         cake.makePresets(false, false, false);
         candy.makePresets(true, false, true);
         chalice.makePresets(false, false, false);
+        chorus.makePresets(false, false, false);
         column.makePresets(false, false, false);
         creepy.makePresets(false, false, false);
         desert.makePresets(false, false, false);
@@ -171,6 +176,7 @@ public class TARDISChameleonPreset {
         invisible.makePresets(true, true, true);
         jail.makePresets(false, false, false);
         jungle.makePresets(false, false, false);
+        junk.makePresets(true, false, false);
         lamp.makePresets(true, false, true);
         library.makePresets(false, false, false);
         lighthouse.makePresets(false, false, false);
@@ -313,64 +319,67 @@ public class TARDISChameleonPreset {
         }
     }
 
-    private static byte[][] rotate2DByteArray(byte[][] id, COMPASS d, boolean assymetric) {
+    private static byte[][] rotate2DByteArray(byte[][] data, COMPASS d, boolean assymetric) {
         switch (d) {
             case NORTH:
-                byte[] zero_s = id[0];
-                byte[] one_s = id[1];
-                byte[] two_s = id[2];
-                byte[] three_s = id[3];
-                byte[] four_s = id[4];
-                byte[] five_s = id[5];
-                byte[] six_s = id[6];
-                byte[] seven_s = id[7];
-                id[0] = two_s;
-                id[1] = three_s;
-                id[2] = four_s;
-                id[3] = five_s;
-                id[4] = six_s;
-                id[5] = seven_s;
-                id[6] = zero_s;
-                id[7] = one_s;
-                return id;
+                byte[] zero_s = data[0];
+                byte[] one_s = data[1];
+                byte[] two_s = data[2];
+                byte[] three_s = data[3];
+                byte[] four_s = data[4];
+                byte[] five_s = data[5];
+                byte[] six_s = data[6];
+                byte[] seven_s = data[7];
+                data[0] = two_s;
+                data[1] = three_s;
+                data[2] = four_s;
+                data[3] = five_s;
+                data[4] = six_s;
+                data[5] = seven_s;
+                data[6] = zero_s;
+                data[7] = one_s;
+                return data;
             case WEST:
                 if (assymetric) {
-                    byte[] two_w = id[2];
-                    byte[] four_w = id[4];
-                    id[2] = id[0];
-                    id[0] = two_w;
-                    id[4] = id[6];
-                    id[6] = four_w;
+                    byte[] two_w = data[2];
+                    byte[] four_w = data[4];
+                    data[2] = data[0];
+                    data[0] = two_w;
+                    data[4] = data[6];
+                    data[6] = four_w;
                 }
-                byte[] three_w = id[3];
-                id[3] = id[7];
-                id[7] = three_w;
-                return id;
+                //byte[] one_w = data[1];
+                byte[] three_w = data[3];
+                //data[1] = data[5];
+                //data[5] = one_w;
+                data[3] = data[7];
+                data[7] = three_w;
+                return data;
             default:
-                byte[] zero_n = id[0];
-                byte[] one_n = id[1];
-                byte[] two_n = id[2];
-                byte[] three_n = id[3];
-                byte[] four_n = id[4];
-                byte[] five_n = id[5];
-                byte[] six_n = id[6];
-                byte[] seven_n = id[7];
-                id[0] = six_n;
-                id[1] = seven_n;
-                id[2] = zero_n;
-                id[3] = one_n;
-                id[4] = two_n;
-                id[5] = three_n;
-                id[6] = four_n;
-                id[7] = five_n;
-                return id;
+                byte[] zero_n = data[0];
+                byte[] one_n = data[1];
+                byte[] two_n = data[2];
+                byte[] three_n = data[3];
+                byte[] four_n = data[4];
+                byte[] five_n = data[5];
+                byte[] six_n = data[6];
+                byte[] seven_n = data[7];
+                data[0] = six_n;
+                data[1] = seven_n;
+                data[2] = zero_n;
+                data[3] = one_n;
+                data[4] = two_n;
+                data[5] = three_n;
+                data[6] = four_n;
+                data[7] = five_n;
+                return data;
         }
     }
 
     private static byte[][] convertData(int[][] id, byte[][] data, COMPASS d, boolean duck, boolean istorch) {
         for (int col = 0; col < 10; col++) {
             for (int block = 0; block < 4; block++) {
-                if (problemBlocks.contains(id[col][block])) {
+                if (PROBLEM_BLOCKS.contains(id[col][block])) {
                     switch (id[col][block]) {
                         case 50: // torches
                             data[col][block] = new TARDISTorchRecalculator().recalculate(data[col][block], d);
@@ -448,6 +457,7 @@ public class TARDISChameleonPreset {
                         case 156: // quartz stair
                         case 163: // acacia stair
                         case 164: // dark oak stair
+                        case 203: // purpur stair
                             data[col][block] = new TARDISStairRecalculator().recalculate(data[col][block], d, col, duck);
                             break;
                         case 77: // stone button
@@ -525,6 +535,8 @@ public class TARDISChameleonPreset {
                 return candy.getBlueprint().get(d);
             case CHALICE:
                 return chalice.getBlueprint().get(d);
+            case CHORUS:
+                return chorus.getBlueprint().get(d);
             case CREEPY:
                 return creepy.getBlueprint().get(d);
             case DESERT:
@@ -553,6 +565,8 @@ public class TARDISChameleonPreset {
                 return jail.getBlueprint().get(d);
             case JUNGLE:
                 return jungle.getBlueprint().get(d);
+            case JUNK_MODE:
+                return junk.getBlueprint().get(d);
             case LAMP:
                 return lamp.getBlueprint().get(d);
             case LIBRARY:
@@ -636,6 +650,8 @@ public class TARDISChameleonPreset {
                 return candy.getGlass().get(d);
             case CHALICE:
                 return chalice.getGlass().get(d);
+            case CHORUS:
+                return chorus.getGlass().get(d);
             case CREEPY:
                 return creepy.getGlass().get(d);
             case DESERT:
@@ -664,6 +680,8 @@ public class TARDISChameleonPreset {
                 return jail.getGlass().get(d);
             case JUNGLE:
                 return jungle.getGlass().get(d);
+            case JUNK_MODE:
+                return junk.getGlass().get(d);
             case LAMP:
                 return lamp.getGlass().get(d);
             case LIBRARY:
@@ -747,6 +765,8 @@ public class TARDISChameleonPreset {
                 return candy.getStained().get(d);
             case CHALICE:
                 return chalice.getStained().get(d);
+            case CHORUS:
+                return chorus.getStained().get(d);
             case CREEPY:
                 return creepy.getStained().get(d);
             case DESERT:
@@ -775,6 +795,8 @@ public class TARDISChameleonPreset {
                 return jail.getStained().get(d);
             case JUNGLE:
                 return jungle.getStained().get(d);
+            case JUNK_MODE:
+                return junk.getStained().get(d);
             case LAMP:
                 return lamp.getStained().get(d);
             case LIBRARY:

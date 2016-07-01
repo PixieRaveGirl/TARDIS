@@ -24,8 +24,10 @@ import me.eccentric_nz.TARDIS.api.Parameters;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisArtron;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
 import me.eccentric_nz.TARDIS.enumeration.FLAG;
+import me.eccentric_nz.TARDIS.flight.TARDISLand;
 import me.eccentric_nz.TARDIS.travel.TARDISAreasInventory;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
@@ -70,19 +72,45 @@ public class TARDISSaveSignListener extends TARDISMenuListener implements Listen
             final Player player = (Player) event.getWhoClicked();
             UUID uuid = player.getUniqueId();
             // get the TARDIS the player is in
-            HashMap<String, Object> wheres = new HashMap<String, Object>();
-            wheres.put("uuid", player.getUniqueId().toString());
-            ResultSetTravellers rst = new ResultSetTravellers(plugin, wheres, false);
-            if (rst.resultSet()) {
-                int id = rst.getTardis_id();
+            boolean allow = false;
+            int id = -1;
+            if (plugin.getTrackerKeeper().getJunkPlayers().containsKey(uuid)) {
+                allow = true;
+                id = plugin.getTrackerKeeper().getJunkPlayers().get(uuid);
+            } else {
+                HashMap<String, Object> wheres = new HashMap<String, Object>();
+                wheres.put("uuid", player.getUniqueId().toString());
+                ResultSetTravellers rst = new ResultSetTravellers(plugin, wheres, false);
+                if (rst.resultSet()) {
+                    allow = true;
+                    id = rst.getTardis_id();
+                }
+            }
+            if (allow) {
                 int slot = event.getRawSlot();
                 if (plugin.getTrackerKeeper().getArrangers().contains(uuid)) {
-                    if (slot >= 1 && slot < 45) {
+                    if ((slot >= 1 && slot < 45) || slot == 53) {
                         if (event.getClick().equals(ClickType.SHIFT_LEFT) || event.getClick().equals(ClickType.SHIFT_RIGHT)) {
                             event.setCancelled(true);
                             return;
                         }
                         // allow
+                        if (slot == 53) {
+                            // get item on cursor
+                            ItemStack cursor = player.getItemOnCursor();
+                            if (cursor.getType().equals(Material.AIR)) {
+                                event.setCancelled(true);
+                            } else {
+                                ItemMeta cim = cursor.getItemMeta();
+                                String save = cim.getDisplayName();
+                                HashMap<String, Object> where = new HashMap<String, Object>();
+                                where.put("tardis_id", id);
+                                where.put("dest_name", save);
+                                new QueryFactory(plugin).doDelete("destinations", where);
+                                player.setItemOnCursor(null);
+                            }
+                            event.setCancelled(true);
+                        }
                     } else {
                         event.setCancelled(true);
                     }
@@ -113,10 +141,8 @@ public class TARDISSaveSignListener extends TARDISMenuListener implements Listen
                                     return;
                                 }
                                 // get tardis artron level
-                                HashMap<String, Object> wherel = new HashMap<String, Object>();
-                                wherel.put("tardis_id", id);
-                                ResultSetTardis rs = new ResultSetTardis(plugin, wherel, "", false);
-                                if (!rs.resultSet()) {
+                                ResultSetTardisArtron rs = new ResultSetTardisArtron(plugin);
+                                if (!rs.fromID(id)) {
                                     close(player);
                                     return;
                                 }
@@ -141,7 +167,7 @@ public class TARDISSaveSignListener extends TARDISMenuListener implements Listen
                                         return;
                                     }
                                 }
-                                if (!save_dest.equals(current)) {
+                                if (!save_dest.equals(current) || plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
                                     HashMap<String, Object> set = new HashMap<String, Object>();
                                     set.put("world", lore.get(0));
                                     set.put("x", TARDISNumberParsers.parseInt(lore.get(1)));
@@ -160,13 +186,16 @@ public class TARDISSaveSignListener extends TARDISMenuListener implements Listen
                                     }
                                     HashMap<String, Object> wheret = new HashMap<String, Object>();
                                     wheret.put("tardis_id", id);
-                                    new QueryFactory(plugin).doUpdate("next", set, wheret);
+                                    new QueryFactory(plugin).doSyncUpdate("next", set, wheret);
                                     plugin.getTrackerKeeper().getHasDestination().put(id, travel);
                                     if (plugin.getTrackerKeeper().getRescue().containsKey(id)) {
                                         plugin.getTrackerKeeper().getRescue().remove(id);
                                     }
                                     close(player);
-                                    TARDISMessage.send(player, "DEST_SET_TERMINAL", im.getDisplayName(), true);
+                                    TARDISMessage.send(player, "DEST_SET_TERMINAL", im.getDisplayName(), !plugin.getTrackerKeeper().getDestinationVortex().containsKey(id));
+                                    if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                                        new TARDISLand(plugin, id, player).exitVortex();
+                                    }
                                 } else if (!lore.contains("§6Current location")) {
                                     lore.add("§6Current location");
                                     im.setLore(lore);
@@ -184,7 +213,7 @@ public class TARDISSaveSignListener extends TARDISMenuListener implements Listen
                     HashMap<String, Object> wherez = new HashMap<String, Object>();
                     wherez.put("tardis_id", id);
                     wherez.put("uuid", player.getUniqueId().toString());
-                    ResultSetTardis rs = new ResultSetTardis(plugin, wherez, "", false);
+                    ResultSetTardis rs = new ResultSetTardis(plugin, wherez, "", false, 0);
                     if (rs.resultSet()) {
                         if (!plugin.getTrackerKeeper().getArrangers().contains(uuid)) {
                             // Only add one at a time

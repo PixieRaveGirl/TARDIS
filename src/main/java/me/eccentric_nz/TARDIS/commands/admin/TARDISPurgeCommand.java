@@ -16,10 +16,9 @@
  */
 package me.eccentric_nz.TARDIS.commands.admin;
 
-import java.util.HashMap;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.destroyers.TARDISExterminator;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.command.CommandSender;
@@ -45,16 +44,14 @@ public class TARDISPurgeCommand {
         } else {
             uuid = plugin.getServer().getOfflinePlayer(args[1]).getUniqueId();
         }
-        if (uuid == null) {
-            uuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(args[1]);
-            plugin.getGeneralKeeper().getUUIDCache().getId(args[1]);
-        }
+//        if (uuid == null) {
+//            uuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(args[1]);
+//            plugin.getGeneralKeeper().getUUIDCache().getId(args[1]);
+//        }
         if (uuid != null) {
             // get the player's TARDIS id
-            HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("uuid", uuid.toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-            if (!rs.resultSet()) {
+            ResultSetTardisID rs = new ResultSetTardisID(plugin);
+            if (!rs.fromUUID(uuid.toString())) {
                 TARDISMessage.send(sender, "PLAYER_NOT_FOUND_DB", args[1]);
                 return true;
             }

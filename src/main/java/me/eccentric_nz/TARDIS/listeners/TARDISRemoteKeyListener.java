@@ -25,6 +25,7 @@ import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetDoors;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.move.TARDISDoorToggler;
@@ -41,6 +42,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -62,13 +64,16 @@ public class TARDISRemoteKeyListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         Action action = event.getAction();
         if (!action.equals(Action.LEFT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_AIR)) {
             return;
         }
         final Player player = event.getPlayer();
         // check item in hand
-        ItemStack is = player.getItemInHand();
+        ItemStack is = player.getInventory().getItemInMainHand();
         if (is == null || !is.getType().equals(rkey)) {
             return;
         }
@@ -77,19 +82,25 @@ public class TARDISRemoteKeyListener implements Listener {
             // has TARDIS?
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", uuid);
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (!rs.resultSet()) {
                 return;
             }
-            final int id = rs.getTardis_id();
-            final PRESET preset = rs.getPreset();
+            Tardis tardis = rs.getTardis();
+            final int id = tardis.getTardis_id();
+            final boolean powered = tardis.isPowered_on();
+            final PRESET preset = tardis.getPreset();
             if (plugin.getTrackerKeeper().getInSiegeMode().contains(id)) {
                 TARDISMessage.send(player, "SIEGE_NO_CONTROL");
                 return;
             }
-            boolean hidden = rs.isHidden();
+            if (plugin.getTrackerKeeper().getDispersedTARDII().contains(id)) {
+                TARDISMessage.send(player, "NOT_WHILE_DISPERSED");
+                return;
+            }
+            boolean hidden = tardis.isHidden();
             if (action.equals(Action.LEFT_CLICK_AIR)) {
-                final boolean powered = rs.isPowered_on();
+
                 // get the TARDIS current location
                 HashMap<String, Object> wherec = new HashMap<String, Object>();
                 wherec.put("tardis_id", id);
@@ -114,7 +125,7 @@ public class TARDISRemoteKeyListener implements Listener {
                     String message = (rsd.isLocked()) ? plugin.getLanguage().getString("DOOR_UNLOCK") : plugin.getLanguage().getString("DOOR_DEADLOCK");
                     TARDISMessage.send(player, "DOOR_LOCK", message);
                     final TARDISPoliceBoxLampToggler tpblt = new TARDISPoliceBoxLampToggler(plugin);
-                    TARDISSounds.playTARDISSoundNearby(l, "tardis_lock");
+                    TARDISSounds.playTARDISSound(l, "tardis_lock");
                     tpblt.toggleLamp(id, !powered);
                     plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                         @Override
@@ -123,33 +134,41 @@ public class TARDISRemoteKeyListener implements Listener {
                         }
                     }, 6L);
                 }
+            } else if (preset.equals(PRESET.INVISIBLE)) {
+                HashMap<String, Object> whered = new HashMap<String, Object>();
+                whered.put("tardis_id", id);
+                whered.put("door_type", 1);
+                ResultSetDoors rsd = new ResultSetDoors(plugin, whered, false);
+                if (rsd.resultSet()) {
+                    // get inner door block
+                    Block block = TARDISLocationGetters.getLocationFromDB(rsd.getDoor_location(), 0.0f, 0.0f).getBlock();
+                    COMPASS dd = rsd.getDoor_direction();
+                    boolean open = TARDISStaticUtils.isOpen(block, dd);
+                    // toggle door / portals
+                    new TARDISDoorToggler(plugin, block, player, false, open, id).toggleDoors();
+                    String message = (open) ? "DOOR_CLOSED" : "DOOR_OPENED";
+                    TARDISMessage.send(player, message);
+                }
             } else {
-                if (preset.equals(PRESET.INVISIBLE)) {
-                    HashMap<String, Object> whered = new HashMap<String, Object>();
-                    whered.put("tardis_id", id);
-                    whered.put("door_type", 1);
-                    ResultSetDoors rsd = new ResultSetDoors(plugin, whered, false);
-                    if (rsd.resultSet()) {
-                        // get inner door block
-                        Block block = TARDISLocationGetters.getLocationFromDB(rsd.getDoor_location(), 0.0f, 0.0f).getBlock();
-                        COMPASS dd = rsd.getDoor_direction();
-                        boolean open = TARDISStaticUtils.isOpen(block, dd);
-                        // toggle door / portals
-                        new TARDISDoorToggler(plugin, block, player, false, open, id).toggleDoors();
-                        String message = (open) ? "DOOR_CLOSED" : "DOOR_OPENED";
-                        TARDISMessage.send(player, message);
+                if (plugin.getTrackerKeeper().getRebuildCooldown().containsKey(player.getUniqueId())) {
+                    long now = System.currentTimeMillis();
+                    long cooldown = plugin.getConfig().getLong("police_box.rebuild_cooldown");
+                    long then = plugin.getTrackerKeeper().getRebuildCooldown().get(player.getUniqueId()) + cooldown;
+                    if (now < then) {
+                        TARDISMessage.send(player.getPlayer(), "COOLDOWN", String.format("%d", cooldown / 1000));
+                        return;
                     }
+                }
+                if (!powered) {
+                    TARDISMessage.send(player, "POWER_DOWN");
+                    return;
+                }
+                if (hidden) {
+                    // rebuild
+                    new TARDISRebuildCommand(plugin).rebuildPreset(player);
                 } else {
-                    // toggle hidden
-                    if (hidden) {
-                        // rebuild
-                        TARDISSounds.playTARDISSound(player.getLocation(), player, "tardis_rebuild");
-                        new TARDISRebuildCommand(plugin).rebuildPreset(player);
-                    } else {
-                        // hide
-                        TARDISSounds.playTARDISSound(player.getLocation(), player, "tardis_hide");
-                        new TARDISHideCommand(plugin).hide(player);
-                    }
+                    // hide
+                    new TARDISHideCommand(plugin).hide(player);
                 }
             }
         }

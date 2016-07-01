@@ -20,18 +20,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetBlocks;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.ReplacedBlock;
+import me.eccentric_nz.TARDIS.destroyers.DestroyData;
 import me.eccentric_nz.TARDIS.utility.TARDISBlockSetters;
-import me.eccentric_nz.TARDIS.utility.TARDISEffectLibHelper;
-import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
+import me.eccentric_nz.TARDIS.utility.TARDISJunkParticles;
 import me.eccentric_nz.TARDIS.utility.TARDISSounds;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -45,7 +46,7 @@ import org.bukkit.entity.Player;
 public class TARDISJunkDestroyer implements Runnable {
 
     private final TARDIS plugin;
-    private final TARDISMaterialisationData pdd;
+    private final DestroyData pdd;
     private int task;
     private int i = 0;
     private final int sx, ex, sy, ey, sz, ez;
@@ -56,7 +57,7 @@ public class TARDISJunkDestroyer implements Runnable {
     Biome biome;
     private int fryTask;
 
-    public TARDISJunkDestroyer(TARDIS plugin, TARDISMaterialisationData pdd) {
+    public TARDISJunkDestroyer(TARDIS plugin, DestroyData pdd) {
         this.plugin = plugin;
         this.pdd = pdd;
         this.junkLoc = this.pdd.getLocation();
@@ -83,22 +84,17 @@ public class TARDISJunkDestroyer implements Runnable {
                         plugin.getGeneralKeeper().getJunkTravellers().add(p.getUniqueId());
                     }
                 }
-                for (Entity e : getJunkTravellers(16.0d)) {
-                    if (e instanceof Player) {
-                        Player p = (Player) e;
-                        TARDISSounds.playTARDISSound(junkLoc, p, "junk_takeoff");
-                    }
-                }
+                TARDISSounds.playTARDISSound(junkLoc, "junk_takeoff");
                 fryTask = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new TARDISJunkItsDangerousRunnable(plugin, junkLoc), 0, 1L);
             }
             if (i == 25) {
                 // get junk vortex location
                 HashMap<String, Object> where = new HashMap<String, Object>();
                 where.put("uuid", "00000000-aaaa-bbbb-cccc-000000000000");
-                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 2);
                 if (rs.resultSet()) {
                     // teleport players to vortex
-                    vortexJunkLoc = plugin.getLocationUtils().getLocationFromBukkitString(rs.getCreeper()).add(3.0d, 0.0d, 2.0d);
+                    vortexJunkLoc = plugin.getLocationUtils().getLocationFromBukkitString(rs.getTardis().getCreeper()).add(3.0d, 0.0d, 2.0d);
                     for (Entity e : getJunkTravellers(4.0d)) {
                         if (e instanceof Player) {
                             final Player p = (Player) e;
@@ -123,7 +119,7 @@ public class TARDISJunkDestroyer implements Runnable {
                         for (int col = sz; col <= ez; col++) {
                             Block b = world.getBlockAt(row, level, col);
                             b.setType(Material.AIR);
-                            if (level == sy && (b.getBiome().equals(Biome.SKY) && !junkLoc.getWorld().getEnvironment().equals(World.Environment.THE_END)) && biome != null) {
+                            if (level == sy && ((b.getBiome().equals(Biome.SKY) && !junkLoc.getWorld().getEnvironment().equals(Environment.THE_END)) || b.getBiome().equals(Biome.VOID)) && biome != null) {
                                 if (!chunks.contains(b.getChunk())) {
                                     chunks.add(b.getChunk());
                                 }
@@ -138,7 +134,8 @@ public class TARDISJunkDestroyer implements Runnable {
                         }
                         // refresh the chunks
                         for (Chunk chink : chunks) {
-                            world.refreshChunk(chink.getX(), chink.getZ());
+                            //world.refreshChunk(chink.getX(), chink.getZ());
+                            plugin.getTardisHelper().refreshChunk(chink);
                         }
                         chunks.clear();
                     }
@@ -150,26 +147,11 @@ public class TARDISJunkDestroyer implements Runnable {
                 tid.put("tardis_id", pdd.getTardisID());
                 ResultSetBlocks rsb = new ResultSetBlocks(plugin, tid, true);
                 if (rsb.resultSet()) {
-                    ArrayList<HashMap<String, String>> data = rsb.getData();
-                    for (HashMap<String, String> map : data) {
-                        Material mat = Material.AIR;
-                        byte bd = (byte) 0;
-                        if (map.get("block") != null) {
-                            mat = Material.valueOf(map.get("block"));
-                        }
-                        if (map.get("data") != null) {
-                            bd = TARDISNumberParsers.parseByte(map.get("data"));
-                        }
-                        String locStr = map.get("location");
-                        String[] loc_data = locStr.split(",");
-                        // x, y, z - 1, 2, 3
-                        String[] xStr = loc_data[1].split("=");
-                        String[] yStr = loc_data[2].split("=");
-                        String[] zStr = loc_data[3].split("=");
-                        int rx = TARDISNumberParsers.parseInt(xStr[1].substring(0, (xStr[1].length() - 2)));
-                        int ry = TARDISNumberParsers.parseInt(yStr[1].substring(0, (yStr[1].length() - 2)));
-                        int rz = TARDISNumberParsers.parseInt(zStr[1].substring(0, (zStr[1].length() - 2)));
-                        TARDISBlockSetters.setBlock(world, rx, ry, rz, mat, bd);
+                    for (ReplacedBlock rp : rsb.getData()) {
+                        int rx = rp.getLocation().getBlockX();
+                        int ry = rp.getLocation().getBlockY();
+                        int rz = rp.getLocation().getBlockZ();
+                        TARDISBlockSetters.setBlock(world, rx, ry, rz, rp.getBlock(), rp.getData());
                     }
                 }
                 // remove block protection
@@ -177,9 +159,14 @@ public class TARDISJunkDestroyer implements Runnable {
                 plugin.getServer().getScheduler().cancelTask(fryTask);
                 plugin.getServer().getScheduler().cancelTask(task);
                 task = 0;
-            } else if (plugin.getConfig().getBoolean("junk.particles") && plugin.isEffectLibOnServer()) {
+            } else if (plugin.getConfig().getBoolean("junk.particles")) {
                 // just animate particles
-                TARDISEffectLibHelper.sendVortexParticles(effectsLoc);
+                for (Entity e : plugin.getUtils().getJunkTravellers(junkLoc)) {
+                    if (e instanceof Player) {
+                        Player p = (Player) e;
+                        TARDISJunkParticles.sendVortexParticles(effectsLoc, p);
+                    }
+                }
             }
         }
     }

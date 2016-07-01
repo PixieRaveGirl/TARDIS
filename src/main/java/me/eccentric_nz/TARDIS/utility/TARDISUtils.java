@@ -17,6 +17,7 @@
 package me.eccentric_nz.TARDIS.utility;
 
 import java.util.HashMap;
+import java.util.List;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCount;
@@ -24,12 +25,16 @@ import me.eccentric_nz.TARDIS.database.ResultSetDiskStorage;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.tardischunkgenerator.TARDISChunkGenerator;
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldType;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.generator.ChunkGenerator;
 
@@ -83,6 +88,20 @@ public class TARDISUtils {
         }
         boolean special = (name.equals(dn) && (world.getWorldType().equals(WorldType.FLAT) || gen instanceof TARDISChunkGenerator));
         return name.equals("TARDIS_WORLD_" + player.getName()) || special;
+    }
+
+    public boolean inTARDISWorld(Location loc) {
+        // check they are still in the TARDIS world
+        World world = loc.getWorld();
+        String name = world.getName();
+        ChunkGenerator gen = world.getGenerator();
+        // get default world name
+        String dn = "TARDIS_TimeVortex";
+        if (plugin.getConfig().getBoolean("creation.default_world")) {
+            dn = plugin.getConfig().getString("creation.default_world_name");
+        }
+        boolean special = (name.equals(dn) && (world.getWorldType().equals(WorldType.FLAT) || gen instanceof TARDISChunkGenerator));
+        return name.startsWith("TARDIS_WORLD_") || special;
     }
 
     /**
@@ -182,5 +201,39 @@ public class TARDISUtils {
             }
         }
         return inGracePeriod;
+    }
+
+    public List<Entity> getJunkTravellers(Location loc) {
+        // spawn an entity
+        Entity orb = loc.getWorld().spawnEntity(loc, EntityType.EXPERIENCE_ORB);
+        List<Entity> ents = orb.getNearbyEntities(16.0d, 16.0d, 16.0d);
+        orb.remove();
+        return ents;
+    }
+
+    public boolean restoreBiome(Location l, Biome biome) {
+        int sbx = l.getBlockX() - 1;
+        final int sbz = l.getBlockZ() - 1;
+        World w = l.getWorld();
+        boolean run = true;
+        // reset biome and it's not The End
+        if (l.getBlock().getBiome().equals(Biome.DEEP_OCEAN) || l.getBlock().getBiome().equals(Biome.VOID) || (l.getBlock().getBiome().equals(Biome.SKY) && !l.getWorld().getEnvironment().equals(World.Environment.THE_END)) && biome != null) {
+            // reset the biome
+            for (int c = 0; c < 3 && run; c++) {
+                for (int r = 0; r < 3 && run; r++) {
+                    try {
+                        w.setBiome(sbx + c, sbz + r, biome);
+                    } catch (NullPointerException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
+                }
+            }
+            // refresh the chunk
+            Chunk chunk = w.getChunkAt(l);
+            //w.refreshChunk(chunk.getX(), chunk.getZ());
+            plugin.getTardisHelper().refreshChunk(chunk);
+        }
+        return run;
     }
 }

@@ -92,6 +92,12 @@ public class TARDISInformationSystemListener implements Listener {
                         if (chat.equalsIgnoreCase("T")) {
                             processKey(p, TARDISInfoMenu.TYPES);
                         }
+                        if (chat.equalsIgnoreCase("F")) {
+                            processKey(p, TARDISInfoMenu.FOOD_ACCESSORIES);
+                        }
+                        if (chat.equalsIgnoreCase("P")) {
+                            processKey(p, TARDISInfoMenu.PLANETS);
+                        }
                         break;
                     // SECOND level menu
                     case CONSOLE_BLOCKS:
@@ -183,11 +189,17 @@ public class TARDISInformationSystemListener implements Listener {
                         if (chat.equalsIgnoreCase("A")) {
                             processKey(p, TARDISInfoMenu.CELL);
                         }
+                        if (chat.equalsIgnoreCase("B")) {
+                            processKey(p, TARDISInfoMenu.READER);
+                        }
                         if (chat.equalsIgnoreCase("F")) {
                             processKey(p, TARDISInfoMenu.FILTER);
                         }
                         if (chat.equalsIgnoreCase("K")) {
                             processKey(p, TARDISInfoMenu.KEY);
+                        }
+                        if (chat.equalsIgnoreCase("m")) {
+                            processKey(p, TARDISInfoMenu.R_KEY);
                         }
                         if (chat.equalsIgnoreCase("S")) {
                             processKey(p, TARDISInfoMenu.SONIC);
@@ -197,6 +209,12 @@ public class TARDISInformationSystemListener implements Listener {
                         }
                         if (chat.equalsIgnoreCase("R")) {
                             processKey(p, TARDISInfoMenu.REMOTE);
+                        }
+                        if (chat.equalsIgnoreCase("u")) {
+                            processKey(p, TARDISInfoMenu.FURNACE);
+                        }
+                        if (chat.equalsIgnoreCase("G")) {
+                            processKey(p, TARDISInfoMenu.GENERATOR);
                         }
                         break;
                     case DISKS:
@@ -258,6 +276,9 @@ public class TARDISInformationSystemListener implements Listener {
                         }
                         if (chat.equalsIgnoreCase("y")) {
                             processKey(p, TARDISInfoMenu.MEMORY_CIRCUIT);
+                        }
+                        if (chat.equalsIgnoreCase("f")) {
+                            processKey(p, TARDISInfoMenu.RIFT_CIRCUIT);
                         }
                         break;
                     case SONIC_COMPONENTS:
@@ -459,7 +480,7 @@ public class TARDISInformationSystemListener implements Listener {
                         if (chat.equalsIgnoreCase("W")) {
                             showInfo(p, TARDISInfoMenu.WAR);
                         }
-                        if (chat.equalsIgnoreCase("P")) {
+                        if (chat.equalsIgnoreCase("y")) {
                             showInfo(p, TARDISInfoMenu.PYRAMID);
                         }
                         if (chat.equalsIgnoreCase("M")) {
@@ -467,6 +488,40 @@ public class TARDISInformationSystemListener implements Listener {
                         }
                         if (chat.equalsIgnoreCase("C")) {
                             showInfo(p, TARDISInfoMenu.CUSTOM);
+                        }
+                        if (chat.equalsIgnoreCase("E")) {
+                            showInfo(p, TARDISInfoMenu.ENDER);
+                        }
+                        if (chat.equalsIgnoreCase("o")) {
+                            showInfo(p, TARDISInfoMenu.CORAL);
+                        }
+                        break;
+                    case FOOD_ACCESSORIES:
+                        if (chat.equalsIgnoreCase("B")) {
+                            processKey(p, TARDISInfoMenu.BOW_TIE);
+                        }
+                        if (chat.equalsIgnoreCase("C")) {
+                            processKey(p, TARDISInfoMenu.CUSTARD);
+                        }
+                        if (chat.equalsIgnoreCase("D")) {
+                            processKey(p, TARDISInfoMenu.JAMMY_DODGER);
+                        }
+                        if (chat.equalsIgnoreCase("F")) {
+                            processKey(p, TARDISInfoMenu.FISH_FINGER);
+                        }
+                        if (chat.equalsIgnoreCase("G")) {
+                            processKey(p, TARDISInfoMenu.GLASSES);
+                        }
+                        if (chat.equalsIgnoreCase("J")) {
+                            processKey(p, TARDISInfoMenu.JELLY_BABY);
+                        }
+                        if (chat.equalsIgnoreCase("W")) {
+                            processKey(p, TARDISInfoMenu.WATCH);
+                        }
+                        break;
+                    case PLANETS:
+                        if (chat.equalsIgnoreCase("S")) {
+                            processKey(p, TARDISInfoMenu.SKARO);
                         }
                         break;
                     // THIRD level menus
@@ -500,6 +555,94 @@ public class TARDISInformationSystemListener implements Listener {
                         }
                         if (chat.equalsIgnoreCase("R")) {
                             showRecipe(p, TARDISInfoMenu.REMOTE_RECIPE);
+                        }
+                        break;
+                    case READER:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.READER_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.READER_RECIPE);
+                        }
+                        break;
+                    case R_KEY:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.R_KEY_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.R_KEY_RECIPE);
+                        }
+                        break;
+                    case FURNACE:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.FURNACE_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.FURNACE_RECIPE);
+                        }
+                        break;
+                    case GENERATOR:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.GENERATOR_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.GENERATOR_RECIPE);
+                        }
+                        break;
+                    case GLASSES:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.GLASSES_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.GLASSES_RECIPE);
+                        }
+                        break;
+                    case BOW_TIE:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.BOW_TIE_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.BOW_TIE_RECIPE);
+                        }
+                        break;
+                    case CUSTARD:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.CUSTARD_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.CUSTARD_RECIPE);
+                        }
+                        break;
+                    case FISH_FINGER:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.FISH_FINGER_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.FISH_FINGER_RECIPE);
+                        }
+                        break;
+                    case JELLY_BABY:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.JELLY_BABY_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.JELLY_BABY_RECIPE);
+                        }
+                        break;
+                    case JAMMY_DODGER:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.JAMMY_DODGER_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.JAMMY_DODGER_RECIPE);
+                        }
+                        break;
+                    case WATCH:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.WATCH_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.WATCH_RECIPE);
                         }
                         break;
                     case BIOME_DISK:
@@ -921,7 +1064,38 @@ public class TARDISInformationSystemListener implements Listener {
                             showCommand(p, TARDISInfoMenu.TARDISROOM_ENABLED);
                         }
                         break;
+                    case SKARO:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.SKARO_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("M")) {
+                            showInfo(p, TARDISInfoMenu.SKARO_MONSTERS);
+                        }
+                        if (chat.equalsIgnoreCase("t")) {
+                            processKey(p, TARDISInfoMenu.SKARO_ITEMS);
+                        }
+                        break;
                     // FOURTH level menus
+                    case SKARO_ITEMS:
+                        if (chat.equalsIgnoreCase("R")) {
+                            showInfo(p, TARDISInfoMenu.RIFT_CIRCUIT);
+                        }
+                        if (chat.equalsIgnoreCase("M")) {
+                            showInfo(p, TARDISInfoMenu.RIFT_MANIPULATOR);
+                        }
+                        if (chat.equalsIgnoreCase("u")) {
+                            processKey(p, TARDISInfoMenu.RUST_BUCKET);
+                        }
+                        if (chat.equalsIgnoreCase("P")) {
+                            showInfo(p, TARDISInfoMenu.RUST_PLAGUE_SWORD);
+                        }
+                        if (chat.equalsIgnoreCase("A")) {
+                            showInfo(p, TARDISInfoMenu.ACID_BUCKET);
+                        }
+                        if (chat.equalsIgnoreCase("c")) {
+                            processKey(p, TARDISInfoMenu.ACID_BATTERY);
+                        }
+                        break;
                     case SONIC_TYPES:
                         if (chat.equalsIgnoreCase("Q")) {
                             processKey(p, TARDISInfoMenu.SONIC_Q);
@@ -978,6 +1152,54 @@ public class TARDISInformationSystemListener implements Listener {
                         }
                         if (chat.equalsIgnoreCase("R")) {
                             showRecipe(p, TARDISInfoMenu.A_CIRCUIT_RECIPE);
+                        }
+                        break;
+                    case RIFT_CIRCUIT:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.RIFT_CIRCUIT_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.RIFT_CIRCUIT_RECIPE);
+                        }
+                        break;
+                    case RIFT_MANIPULATOR:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.RIFT_MANIPULATOR_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.RIFT_MANIPULATOR_RECIPE);
+                        }
+                        break;
+                    case RUST_BUCKET:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.RUST_BUCKET_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showInfo(p, TARDISInfoMenu.RUST_BUCKET_RECIPE);
+                        }
+                        break;
+                    case RUST_PLAGUE_SWORD:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.RUST_PLAGUE_SWORD_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.RUST_PLAGUE_SWORD_RECIPE);
+                        }
+                        break;
+                    case ACID_BUCKET:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.ACID_BUCKET_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showInfo(p, TARDISInfoMenu.ACID_BUCKET_RECIPE);
+                        }
+                        break;
+                    case ACID_BATTERY:
+                        if (chat.equalsIgnoreCase("I")) {
+                            showInfo(p, TARDISInfoMenu.ACID_BATTERY_INFO);
+                        }
+                        if (chat.equalsIgnoreCase("R")) {
+                            showRecipe(p, TARDISInfoMenu.ACID_BATTERY_RECIPE);
                         }
                         break;
                     default:
@@ -1051,7 +1273,7 @@ public class TARDISInformationSystemListener implements Listener {
     private void showRecipe(Player p, TARDISInfoMenu item) {
         // do stuff
         String[] r = item.toString().split("_");
-        String recipe = (r.length > 2) ? r[0] + "-" + r[1] : r[0];
+        String recipe = (r.length == 3) ? r[0] + "-" + r[1] : r[0];
         p.performCommand("tardisrecipe " + recipe);
         exit(p);
     }

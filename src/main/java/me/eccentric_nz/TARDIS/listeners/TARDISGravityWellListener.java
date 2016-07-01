@@ -21,7 +21,7 @@ import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetGravity;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.rooms.TARDISGravityWellRunnable;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
@@ -36,6 +36,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.EquipmentSlot;
 
 /**
  * Air corridors projected by TARDISes had the option to use anti-gravity,
@@ -181,6 +182,9 @@ public class TARDISGravityWellListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onWoolInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         final Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         if (plugin.getTrackerKeeper().getGravity().containsKey(uuid)) {
@@ -188,10 +192,8 @@ public class TARDISGravityWellListener implements Listener {
             Block b = event.getClickedBlock();
             if (b != null) {
                 // get tardis_id
-                HashMap<String, Object> where = new HashMap<String, Object>();
-                where.put("uuid", player.getUniqueId().toString());
-                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-                if (!rs.resultSet()) {
+                ResultSetTardisID rs = new ResultSetTardisID(plugin);
+                if (!rs.fromUUID(player.getUniqueId().toString())) {
                     TARDISMessage.send(player, "NOT_A_TIMELORD");
                     return;
                 }

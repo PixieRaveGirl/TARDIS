@@ -29,7 +29,9 @@ import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetNextLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.DISK_CIRCUIT;
 import me.eccentric_nz.TARDIS.rooms.TARDISExteriorRenderer;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -42,11 +44,14 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitScheduler;
 
 /**
@@ -61,6 +66,7 @@ public class TARDISScannerListener implements Listener {
 
     private final TARDIS plugin;
     List<Material> validBlocks = new ArrayList<Material>();
+    HashMap<String, EntityType> twa = new HashMap<String, EntityType>();
 
     public TARDISScannerListener(TARDIS plugin) {
         this.plugin = plugin;
@@ -69,6 +75,14 @@ public class TARDISScannerListener implements Listener {
         validBlocks.add(Material.REDSTONE_COMPARATOR_ON);
         validBlocks.add(Material.STONE_BUTTON);
         validBlocks.add(Material.WOOD_BUTTON);
+        twa.put("Cyberman Head", EntityType.AREA_EFFECT_CLOUD);
+        twa.put("Empty Child Head", EntityType.ARMOR_STAND);
+        twa.put("Ice Warrior Head", EntityType.ARROW);
+        twa.put("Silurian Head", EntityType.BOAT);
+        twa.put("Sontaran Head", EntityType.FIREWORK);
+        twa.put("Strax Head", EntityType.EGG);
+        twa.put("Vashta Nerada Head", EntityType.ENDER_CRYSTAL);
+        twa.put("Zygon Head", EntityType.FISHING_HOOK);
     }
 
     /**
@@ -80,6 +94,9 @@ public class TARDISScannerListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         final Player player = event.getPlayer();
         Block block = event.getClickedBlock();
         if (block != null) {
@@ -95,16 +112,17 @@ public class TARDISScannerListener implements Listener {
                 // get tardis from saved scanner location
                 HashMap<String, Object> where = new HashMap<String, Object>();
                 where.put("scanner", scanner_loc);
-                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
                 if (rs.resultSet()) {
-                    final int id = rs.getTardis_id();
-                    int level = rs.getArtron_level();
-                    if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+                    Tardis tardis = rs.getTardis();
+                    final int id = tardis.getTardis_id();
+                    int level = tardis.getArtron_level();
+                    if (plugin.getConfig().getBoolean("allow.power_down") && !tardis.isPowered_on()) {
                         TARDISMessage.send(player, "POWER_DOWN");
                         return;
                     }
                     TARDISCircuitChecker tcc = null;
-                    if (plugin.getConfig().getString("preferences.difficulty").equals("hard") && !plugin.getUtils().inGracePeriod(player, false)) {
+                    if (!plugin.getDifficulty().equals(DIFFICULTY.EASY) && !plugin.getUtils().inGracePeriod(player, false)) {
                         tcc = new TARDISCircuitChecker(plugin, id);
                         tcc.getCircuits();
                     }
@@ -116,7 +134,7 @@ public class TARDISScannerListener implements Listener {
                         TARDISMessage.send(player, "SCAN_NO_RANDOM");
                         return;
                     }
-                    final String renderer = rs.getRenderer();
+                    final String renderer = tardis.getRenderer();
                     BukkitScheduler bsched = plugin.getServer().getScheduler();
                     final TARDISScannerData data = scan(player, id, bsched);
                     if (data != null) {
@@ -133,8 +151,10 @@ public class TARDISScannerListener implements Listener {
                                 bsched.scheduleSyncDelayedTask(plugin, new Runnable() {
                                     @Override
                                     public void run() {
-                                        TARDISExteriorRenderer ter = new TARDISExteriorRenderer(plugin);
-                                        ter.render(renderer, data.getScanLocation(), id, player, data.getTardisDirection(), data.getTime(), data.getBiome());
+                                        if (player.isOnline() && plugin.getUtils().inTARDISWorld(player)) {
+                                            TARDISExteriorRenderer ter = new TARDISExteriorRenderer(plugin);
+                                            ter.render(renderer, data.getScanLocation(), id, player, data.getTardisDirection(), data.getTime(), data.getBiome());
+                                        }
                                     }
                                 }, 160L);
                             } else {
@@ -165,7 +185,7 @@ public class TARDISScannerListener implements Listener {
 
     public TARDISScannerData scan(final Player player, final int id, BukkitScheduler bsched) {
         TARDISScannerData data = new TARDISScannerData();
-        TARDISSounds.playTARDISSound(player.getLocation(), player, "tardis_scanner");
+        TARDISSounds.playTARDISSound(player.getLocation(), "tardis_scanner");
         final Location scan_loc;
         String whereisit;
         final COMPASS tardisDirection;
@@ -198,7 +218,6 @@ public class TARDISScannerListener implements Listener {
         for (Entity k : getNearbyEntities(scan_loc, 16)) {
             EntityType et = k.getType();
             if (TARDISConstants.ENTITY_TYPES.contains(et)) {
-                Integer entity_count = (scannedentities.containsKey(et)) ? scannedentities.get(et) : 0;
                 boolean visible = true;
                 if (et.equals(EntityType.PLAYER)) {
                     Player entPlayer = (Player) k;
@@ -208,6 +227,38 @@ public class TARDISScannerListener implements Listener {
                         visible = false;
                     }
                 }
+                if (plugin.getPM().isPluginEnabled("TARDISWeepingAngels") && (et.equals(EntityType.SKELETON) || et.equals(EntityType.ZOMBIE) || et.equals(EntityType.PIG_ZOMBIE))) {
+                    EntityEquipment ee = ((LivingEntity) k).getEquipment();
+                    if (ee.getHelmet() != null) {
+                        switch (ee.getHelmet().getType()) {
+                            case VINE:
+                                // dalek
+                                et = EntityType.COMPLEX_PART;
+                                break;
+                            case IRON_HELMET:
+                            case GOLD_HELMET:
+                            case CHAINMAIL_HELMET:
+                                if (ee.getHelmet().hasItemMeta() && ee.getHelmet().getItemMeta().hasDisplayName()) {
+                                    String dn = ee.getHelmet().getItemMeta().getDisplayName();
+                                    if (twa.containsKey(dn)) {
+                                        et = twa.get(dn);
+                                    }
+                                }
+                                break;
+                            case STONE_BUTTON:
+                                // weeping angel
+                                et = EntityType.DRAGON_FIREBALL;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                if (et.equals(EntityType.ENDERMAN) && k.getPassenger() != null && k.getPassenger().getType().equals(EntityType.GUARDIAN)) {
+                    // silent
+                    et = EntityType.SPLASH_POTION;
+                }
+                Integer entity_count = (scannedentities.containsKey(et)) ? scannedentities.get(et) : 0;
                 if (visible) {
                     scannedentities.put(et, entity_count + 1);
                 }
@@ -269,9 +320,9 @@ public class TARDISScannerListener implements Listener {
         }, 60L);
         // get weather
         final String weather;
-        if (biome.equals(Biome.DESERT) || biome.equals(Biome.DESERT_HILLS) || biome.equals(Biome.SAVANNA) || biome.equals(Biome.SAVANNA_MOUNTAINS) || biome.equals(Biome.SAVANNA_PLATEAU) || biome.equals(Biome.SAVANNA_PLATEAU_MOUNTAINS) || biome.equals(Biome.MESA) || biome.equals(Biome.MESA_BRYCE) || biome.equals(Biome.MESA_PLATEAU) || biome.equals(Biome.MESA_PLATEAU_MOUNTAINS)) {
+        if (biome.equals(Biome.DESERT) || biome.equals(Biome.DESERT_HILLS) || biome.equals(Biome.MUTATED_DESERT) || biome.equals(Biome.SAVANNA) || biome.equals(Biome.SAVANNA_ROCK) || biome.equals(Biome.MUTATED_SAVANNA) || biome.equals(Biome.MUTATED_SAVANNA_ROCK) || biome.equals(Biome.MESA) || biome.equals(Biome.MUTATED_MESA) || biome.equals(Biome.MUTATED_MESA_CLEAR_ROCK) || biome.equals(Biome.MUTATED_MESA_ROCK) || biome.equals(Biome.MESA_ROCK) || biome.equals(Biome.MESA_CLEAR_ROCK)) {
             weather = plugin.getLanguage().getString("WEATHER_DRY");
-        } else if (biome.equals(Biome.ICE_PLAINS) || biome.equals(Biome.ICE_PLAINS_SPIKES) || biome.equals(Biome.FROZEN_OCEAN) || biome.equals(Biome.FROZEN_RIVER) || biome.equals(Biome.COLD_BEACH) || biome.equals(Biome.COLD_TAIGA) || biome.equals(Biome.COLD_TAIGA_HILLS) || biome.equals(Biome.COLD_TAIGA_MOUNTAINS)) {
+        } else if (biome.equals(Biome.ICE_FLATS) || biome.equals(Biome.MUTATED_ICE_FLATS) || biome.equals(Biome.FROZEN_OCEAN) || biome.equals(Biome.FROZEN_RIVER) || biome.equals(Biome.COLD_BEACH) || biome.equals(Biome.TAIGA_COLD) || biome.equals(Biome.TAIGA_COLD_HILLS) || biome.equals(Biome.MUTATED_TAIGA_COLD)) {
             weather = (scan_loc.getWorld().hasStorm()) ? plugin.getLanguage().getString("WEATHER_SNOW") : plugin.getLanguage().getString("WEATHER_COLD");
         } else {
             weather = (scan_loc.getWorld().hasStorm()) ? plugin.getLanguage().getString("WEATHER_RAIN") : plugin.getLanguage().getString("WEATHER_CLEAR");
@@ -308,14 +359,51 @@ public class TARDISScannerListener implements Listener {
                             }
                             message = " (" + buf.toString().substring(2) + ")";
                         }
-                        player.sendMessage("    " + entry.getKey() + ": " + entry.getValue() + message);
+                        switch (entry.getKey()) {
+                            case AREA_EFFECT_CLOUD:
+                                player.sendMessage("    Cyberman: " + entry.getValue());
+                                break;
+                            case COMPLEX_PART:
+                                player.sendMessage("    Dalek: " + entry.getValue());
+                                break;
+                            case ARMOR_STAND:
+                                player.sendMessage("    Empty Child: " + entry.getValue());
+                                break;
+                            case ARROW:
+                                player.sendMessage("    Ice Warrior: " + entry.getValue());
+                                break;
+                            case SPLASH_POTION:
+                                player.sendMessage("    Silent: " + entry.getValue());
+                                break;
+                            case BOAT:
+                                player.sendMessage("    Silurian: " + entry.getValue());
+                                break;
+                            case FIREWORK:
+                                player.sendMessage("    Sontaran: " + entry.getValue());
+                                break;
+                            case EGG:
+                                player.sendMessage("    Strax: " + entry.getValue());
+                                break;
+                            case ENDER_CRYSTAL:
+                                player.sendMessage("    Vashta Nerada: " + entry.getValue());
+                                break;
+                            case DRAGON_FIREBALL:
+                                player.sendMessage("    Weeping Angel: " + entry.getValue());
+                                break;
+                            case FISHING_HOOK:
+                                player.sendMessage("    Zygon: " + entry.getValue());
+                                break;
+                            default:
+                                player.sendMessage("    " + entry.getKey() + ": " + entry.getValue() + message);
+                                break;
+                        }
                     }
                     scannedentities.clear();
                 } else {
                     TARDISMessage.send(player, true, "SCAN_NONE");
                 }
                 // damage the circuit if configured
-                if (plugin.getConfig().getBoolean("circuits.damage") && plugin.getConfig().getString("preferences.difficulty").equals("hard") && plugin.getConfig().getInt("circuits.uses.scanner") > 0) {
+                if (plugin.getConfig().getBoolean("circuits.damage") && !plugin.getDifficulty().equals(DIFFICULTY.EASY) && plugin.getConfig().getInt("circuits.uses.scanner") > 0) {
                     TARDISCircuitChecker tcc = new TARDISCircuitChecker(plugin, id);
                     tcc.getCircuits();
                     // decrement uses

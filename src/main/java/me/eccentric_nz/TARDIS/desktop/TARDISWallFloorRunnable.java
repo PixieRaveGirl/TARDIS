@@ -26,6 +26,7 @@ import me.eccentric_nz.TARDIS.builders.TARDISInteriorPostioning;
 import me.eccentric_nz.TARDIS.builders.TARDISTIPSData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.schematic.TARDISSchematicGZip;
 import me.eccentric_nz.TARDIS.utility.TARDISBlockSetters;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -86,7 +87,7 @@ public class TARDISWallFloorRunnable extends TARDISThemeRunnable implements Runn
             // calculate startx, starty, startz
             HashMap<String, Object> wheret = new HashMap<String, Object>();
             wheret.put("uuid", uuid.toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false, 0);
             if (!rs.resultSet()) {
                 // abort and return energy
                 HashMap<String, Object> wherea = new HashMap<String, Object>();
@@ -94,8 +95,9 @@ public class TARDISWallFloorRunnable extends TARDISThemeRunnable implements Runn
                 int amount = plugin.getArtronConfig().getInt("upgrades." + tud.getSchematic().getPermission());
                 qf.alterEnergyLevel("tardis", amount, wherea, player);
             }
-            slot = rs.getTIPS();
-            id = rs.getTardis_id();
+            Tardis tardis = rs.getTardis();
+            slot = tardis.getTIPS();
+            id = tardis.getTardis_id();
             if (slot != -1) { // default world - use TIPS
                 TARDISInteriorPostioning tintpos = new TARDISInteriorPostioning(plugin);
                 TARDISTIPSData pos = tintpos.getTIPSData(slot);
@@ -104,14 +106,14 @@ public class TARDISWallFloorRunnable extends TARDISThemeRunnable implements Runn
                 startz = pos.getCentreZ();
                 resetz = pos.getCentreZ();
             } else {
-                int gsl[] = plugin.getLocationUtils().getStartLocation(rs.getTardis_id());
+                int gsl[] = plugin.getLocationUtils().getStartLocation(tardis.getTardis_id());
                 startx = gsl[0];
                 resetx = gsl[1];
                 startz = gsl[2];
                 resetz = gsl[3];
             }
             starty = (tud.getSchematic().getPermission().equals("redstone")) ? 65 : 64;
-            String[] split = rs.getChunk().split(":");
+            String[] split = tardis.getChunk().split(":");
             world = plugin.getServer().getWorld(split[0]);
             own_world = plugin.getConfig().getBoolean("creation.create_worlds");
             // wall/floor block prefs
@@ -145,7 +147,7 @@ public class TARDISWallFloorRunnable extends TARDISThemeRunnable implements Runn
                 int z = startz + col;
                 // if we're setting the biome to sky, do it now
                 if (plugin.getConfig().getBoolean("creation.sky_biome") && level == 0) {
-                    world.setBiome(x, z, Biome.SKY);
+                    world.setBiome(x, z, Biome.VOID);
                 }
                 Material type = Material.valueOf((String) bb.get("type"));
                 byte data = bb.getByte("data");

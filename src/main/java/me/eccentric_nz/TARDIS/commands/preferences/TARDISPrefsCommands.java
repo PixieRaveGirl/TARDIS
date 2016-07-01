@@ -51,6 +51,7 @@ public class TARDISPrefsCommands implements CommandExecutor {
     public TARDISPrefsCommands(TARDIS plugin) {
         this.plugin = plugin;
         firstArgs.add("auto");
+        firstArgs.add("auto_powerup");
         firstArgs.add("auto_siege");
         firstArgs.add("beacon");
         firstArgs.add("build");
@@ -63,13 +64,17 @@ public class TARDISPrefsCommands implements CommandExecutor {
         firstArgs.add("flight");
         firstArgs.add("floor");
         firstArgs.add("hads");
+        firstArgs.add("hads_type");
+        firstArgs.add("hum");
         firstArgs.add("isomorphic");
         firstArgs.add("key");
         firstArgs.add("key_menu");
+        firstArgs.add("junk");
         firstArgs.add("lamp");
         firstArgs.add("language");
         firstArgs.add("lanterns");
         firstArgs.add("minecart");
+        firstArgs.add("policebox_textures");
         firstArgs.add("quotes");
         firstArgs.add("renderer");
         firstArgs.add("sfx");
@@ -78,6 +83,7 @@ public class TARDISPrefsCommands implements CommandExecutor {
         firstArgs.add("sign");
         firstArgs.add("sonic");
         firstArgs.add("submarine");
+        firstArgs.add("telepathy");
         firstArgs.add("travelbar");
         firstArgs.add("wall");
         firstArgs.add("wool_lights");
@@ -128,11 +134,20 @@ public class TARDISPrefsCommands implements CommandExecutor {
                     // if no prefs record found, make one
                     if (!rsp.resultSet()) {
                         set.put("uuid", player.getUniqueId().toString());
-                        set.put("lamp", plugin.getConfig().getInt("police_box.tardis_lamp"));
+                        set.put("lamp", plugin.getConfig().getString("police_box.tardis_lamp"));
                         qf.doInsert("player_prefs", set);
+                    }
+                    if (pref.equals("hads_type")) {
+                        return new TARDISHadsTypeCommand(plugin).setHadsPref(player, args, qf);
+                    }
+                    if (pref.equals("hum")) {
+                        return new TARDISHumCommand(plugin).setHumPref(player, args, qf);
                     }
                     if (pref.equals("key")) {
                         return new TARDISSetKeyCommand(plugin).setKeyPref(player, args, qf);
+                    }
+                    if (pref.equals("junk")) {
+                        return new TARDISJunkPreference(plugin).toggle(player, args[1], qf);
                     }
                     if (pref.equals("lamp")) {
                         return new TARDISSetLampCommand(plugin).setLampPref(player, args, qf);

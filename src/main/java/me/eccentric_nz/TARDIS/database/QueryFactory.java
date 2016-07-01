@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
@@ -132,6 +133,20 @@ public class QueryFactory {
     public void doUpdate(String table, HashMap<String, Object> data, HashMap<String, Object> where) {
         TARDISSQLUpdate update = new TARDISSQLUpdate(plugin, table, data, where);
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, update);
+    }
+
+    /**
+     * Updates data in an SQLite database table. This method executes the SQL on
+     * the main thread.
+     *
+     * @param table the database table name to update.
+     * @param data a HashMap<String, Object> of table fields and values update.
+     * @param where a HashMap<String, Object> of table fields and values to
+     * select the records to update.
+     */
+    public void doSyncUpdate(String table, HashMap<String, Object> data, HashMap<String, Object> where) {
+        TARDISSQLUpdate update = new TARDISSQLUpdate(plugin, table, data, where);
+        plugin.getServer().getScheduler().runTask(plugin, update);
     }
 
     /**
@@ -339,6 +354,88 @@ public class QueryFactory {
             } catch (SQLException e) {
                 plugin.debug("Error closing statement! " + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Add a TARDIS id to the thevoid table.
+     *
+     * @param id the tardis_id to add
+     */
+    public void addToVoid(int id) {
+        PreparedStatement ps = null;
+        String query = "INSERT INTO " + prefix + "thevoid (tardis_id) VALUES (?)";
+        try {
+            service.testConnection(connection);
+            ps = connection.prepareStatement(query);
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.debug("Insert error for saving tardis_id to thevoid! " + e.getMessage());
+        } finally {
+            try {
+                if (ps != null) {
+                    ps.close();
+                }
+            } catch (SQLException e) {
+                plugin.debug("Error closing thevoid statement! " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Claim an abandoned TARDIS.
+     *
+     * @param player the claiming player
+     * @param id the TARDIS id
+     * @return true if the claim was a success
+     */
+    public boolean claimTARDIS(Player player, int id) {
+        PreparedStatement ps = null;
+        // check if they have a non-abandoned TARDIS
+        HashMap<String, Object> where = new HashMap<String, Object>();
+        String uuid = player.getUniqueId().toString();
+        where.put("uuid", uuid);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
+        if (!rs.resultSet()) {
+            String query = "UPDATE " + prefix + "tardis SET uuid = ?, owner = ?, last_known_name = ?, abandoned = 0 , tardis_init = 1, powered_on = 1, lastuse = ? WHERE tardis_id = ?";
+            try {
+                service.testConnection(connection);
+                Long now;
+                if (player.hasPermission("tardis.prune.bypass")) {
+                    now = Long.MAX_VALUE - new Random().nextInt(1000);
+                } else {
+                    now = System.currentTimeMillis();
+                }
+                ps = connection.prepareStatement(query);
+                ps.setString(1, uuid);
+                ps.setString(2, player.getName());
+                ps.setString(3, player.getName());
+                ps.setLong(4, now);
+                ps.setInt(5, (Integer) id);
+                boolean bool = (ps.executeUpdate() == 1);
+                if (bool) {
+                    query = "UPDATE " + prefix + "ars SET uuid = ? WHERE tardis_id = ?";
+                    ps = connection.prepareStatement(query);
+                    ps.setString(1, uuid);
+                    ps.setInt(2, (Integer) id);
+                    ps.executeUpdate();
+                }
+                return bool;
+            } catch (SQLException e) {
+                plugin.debug("Update error for claiming abandoned TARDIS! " + e.getMessage());
+                return false;
+            } finally {
+                try {
+                    if (ps != null) {
+                        ps.close();
+                    }
+                } catch (SQLException e) {
+                    plugin.debug("Error closing abandoned TARDIS claim statement! " + e.getMessage());
+                }
+            }
+        } else {
+            return false;
         }
     }
 }

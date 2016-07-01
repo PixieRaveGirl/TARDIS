@@ -29,6 +29,8 @@ import me.eccentric_nz.TARDIS.database.ResultSetAreas;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetHomeLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.FLAG;
 import me.eccentric_nz.TARDIS.enumeration.REMOTE;
 import me.eccentric_nz.TARDIS.travel.TARDISTimeTravel;
@@ -67,48 +69,46 @@ public class TARDISRemoteCommands implements CommandExecutor {
                 return true;
             }
             UUID oluuid = plugin.getServer().getOfflinePlayer(args[0]).getUniqueId();
-            if (oluuid == null) {
-                oluuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(args[0]);
-                plugin.getGeneralKeeper().getUUIDCache().getId(args[0]);
-            }
             if (oluuid != null) {
                 final UUID uuid = oluuid;
                 // check the player has a TARDIS
                 HashMap<String, Object> where = new HashMap<String, Object>();
                 where.put("uuid", uuid.toString());
-                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
                 if (rs.resultSet()) {
+                    Tardis tardis = rs.getTardis();
                     // not in siege mode
-                    if (plugin.getTrackerKeeper().getInSiegeMode().contains(rs.getTardis_id())) {
+                    if (plugin.getTrackerKeeper().getInSiegeMode().contains(tardis.getTardis_id())) {
                         TARDISMessage.send(sender, "SIEGE_NO_CMD");
                         return true;
                     }
                     // we're good to go
-                    final int id = rs.getTardis_id();
-                    boolean chameleon = rs.isChamele_on();
-                    boolean hidden = rs.isHidden();
-                    boolean handbrake = rs.isHandbrake_on();
-                    int level = rs.getArtron_level();
+                    final int id = tardis.getTardis_id();
+                    boolean chameleon = tardis.isChamele_on();
+                    boolean hidden = tardis.isHidden();
+                    boolean handbrake = tardis.isHandbrake_on();
+                    int level = tardis.getArtron_level();
                     if (sender instanceof Player && !sender.hasPermission("tardis.admin")) {
                         HashMap<String, Object> wheret = new HashMap<String, Object>();
                         wheret.put("uuid", ((Player) sender).getUniqueId().toString());
-                        ResultSetTardis rst = new ResultSetTardis(plugin, wheret, "", false);
+                        ResultSetTardis rst = new ResultSetTardis(plugin, wheret, "", false, 0);
                         if (!rst.resultSet()) {
                             TARDISMessage.send(sender, "NOT_A_TIMELORD");
                             return true;
                         }
-                        int tardis_id = rst.getTardis_id();
+                        Tardis t = rst.getTardis();
+                        int tardis_id = t.getTardis_id();
                         if (tardis_id != id) {
                             TARDISMessage.send(sender, "CMD_ONLY_TL_REMOTE");
                             return true;
                         }
-                        if (plugin.getConfig().getBoolean("allow.power_down") && !rst.isPowered_on()) {
+                        if (plugin.getConfig().getBoolean("allow.power_down") && !t.isPowered_on()) {
                             TARDISMessage.send(sender, "POWER_DOWN");
                             return true;
                         }
                         // must have circuits
                         TARDISCircuitChecker tcc = null;
-                        if (plugin.getConfig().getString("preferences.difficulty").equals("hard")) {
+                        if (!plugin.getDifficulty().equals(DIFFICULTY.EASY)) {
                             tcc = new TARDISCircuitChecker(plugin, id);
                             tcc.getCircuits();
                         }
@@ -212,14 +212,14 @@ public class TARDISRemoteCommands implements CommandExecutor {
                                     // check area name
                                     HashMap<String, Object> wherea = new HashMap<String, Object>();
                                     wherea.put("area_name", args[3]);
-                                    ResultSetAreas rsa = new ResultSetAreas(plugin, wherea, false);
+                                    ResultSetAreas rsa = new ResultSetAreas(plugin, wherea, false, false);
                                     if (!rsa.resultSet()) {
                                         TARDISMessage.send(sender, "AREA_NOT_FOUND", ChatColor.GREEN + "/tardis list areas" + ChatColor.RESET);
                                         return true;
                                     }
                                     if ((sender instanceof Player && !sender.hasPermission("tardis.admin")) || sender instanceof BlockCommandSender) {
                                         // must use advanced console if difficulty hard
-                                        if (plugin.getConfig().getString("preferences.difficulty").equals("hard")) {
+                                        if (plugin.getDifficulty().equals(DIFFICULTY.HARD)) {
                                             TARDISMessage.send(sender, "ADV_AREA");
                                             return true;
                                         }
@@ -231,7 +231,7 @@ public class TARDISRemoteCommands implements CommandExecutor {
                                         }
                                     }
                                     // get a landing spot
-                                    Location l = plugin.getTardisArea().getNextSpot(rsa.getAreaName());
+                                    Location l = plugin.getTardisArea().getNextSpot(rsa.getArea().getAreaName());
                                     // returns null if full!
                                     if (l == null) {
                                         TARDISMessage.send(sender, "NO_MORE_SPOTS");
@@ -295,9 +295,8 @@ public class TARDISRemoteCommands implements CommandExecutor {
                                         return true;
                                     }
                                     // check location
-                                    TARDISTimeTravel tt = new TARDISTimeTravel(plugin);
-                                    int[] start_loc = tt.getStartLocation(location, rsc.getDirection());
-                                    int count = tt.safeLocation(start_loc[0], location.getBlockY(), start_loc[2], start_loc[1], start_loc[3], location.getWorld(), rsc.getDirection());
+                                    int[] start_loc = TARDISTimeTravel.getStartLocation(location, rsc.getDirection());
+                                    int count = TARDISTimeTravel.safeLocation(start_loc[0], location.getBlockY(), start_loc[2], start_loc[1], start_loc[3], location.getWorld(), rsc.getDirection());
                                     if (count > 0) {
                                         TARDISMessage.send(sender, "NOT_SAFE");
                                         return true;

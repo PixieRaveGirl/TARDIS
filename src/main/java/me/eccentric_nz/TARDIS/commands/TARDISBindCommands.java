@@ -25,7 +25,7 @@ import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetAreas;
 import me.eccentric_nz.TARDIS.database.ResultSetDestinations;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.ChatColor;
@@ -59,7 +59,7 @@ public class TARDISBindCommands implements CommandExecutor {
         firstArgs.add("biome"); // type 4
         firstArgs.add("remove");
         firstArgs.add("update");
-        type_1 = Arrays.asList("hide", "rebuild", "home", "cave");
+        type_1 = Arrays.asList("hide", "rebuild", "home", "cave", "make_her_blue");
     }
 
     @Override
@@ -86,10 +86,8 @@ public class TARDISBindCommands implements CommandExecutor {
                 TARDISMessage.send(player, "BIND_NOT_VALID");
                 return false;
             }
-            HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-            if (!rs.resultSet()) {
+            ResultSetTardisID rs = new ResultSetTardisID(plugin);
+            if (!rs.fromUUID(player.getUniqueId().toString())) {
                 TARDISMessage.send(player, "NOT_A_TIMELORD");
                 return false;
             }
@@ -190,7 +188,7 @@ public class TARDISBindCommands implements CommandExecutor {
                 if (args[0].equalsIgnoreCase("area")) { // type 3
                     HashMap<String, Object> wherea = new HashMap<String, Object>();
                     wherea.put("area_name", args[1]);
-                    ResultSetAreas rsa = new ResultSetAreas(plugin, wherea, false);
+                    ResultSetAreas rsa = new ResultSetAreas(plugin, wherea, false, false);
                     if (!rsa.resultSet()) {
                         TARDISMessage.send(player, "AREA_NOT_FOUND", ChatColor.GREEN + "/tardis list areas" + ChatColor.RESET);
                         return true;

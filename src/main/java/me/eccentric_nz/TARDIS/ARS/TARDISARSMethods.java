@@ -32,6 +32,7 @@ import me.eccentric_nz.TARDIS.database.ResultSetCondenser;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.DISK_CIRCUIT;
 import me.eccentric_nz.TARDIS.rooms.TARDISWalls.Pair;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -340,7 +341,7 @@ public class TARDISARSMethods {
                                 delay += period;
                             }
                             // damage the circuit if configured
-                            if (plugin.getConfig().getBoolean("circuits.damage") && plugin.getConfig().getString("preferences.difficulty").equals("hard") && plugin.getConfig().getInt("circuits.uses.ars") > 0) {
+                            if (plugin.getConfig().getBoolean("circuits.damage") && !plugin.getDifficulty().equals(DIFFICULTY.EASY) && plugin.getConfig().getInt("circuits.uses.ars") > 0) {
                                 // get the id of the TARDIS this player is in
                                 int id = plugin.getTardisAPI().getIdOfTARDISPlayerIsIn(uuid);
                                 TARDISCircuitChecker tcc = new TARDISCircuitChecker(plugin, id);
@@ -418,7 +419,7 @@ public class TARDISARSMethods {
             for (int j = 0; j < 5; j++) {
                 int slot = i + (j * 9);
                 int id = map[indexx][indexz];
-                String name = TARDISARS.ARSFor(Integer.valueOf(id)).getDescriptiveName();
+                String name = TARDISARS.ARSFor(id).getDescriptiveName();
                 setSlot(inv, slot, id, name, uuid, false);
                 indexz++;
             }
@@ -514,7 +515,7 @@ public class TARDISARSMethods {
             HashMap<String, Object> wherec = new HashMap<String, Object>();
             wherec.put("tardis_id", id);
             wherec.put("block_data", map.getKey());
-            ResultSetCondenser rsc = new ResultSetCondenser(plugin, wherec, false);
+            ResultSetCondenser rsc = new ResultSetCondenser(plugin, wherec);
             if (rsc.resultSet()) {
                 if (rsc.getBlock_count() < map.getValue()) {
                     hasRequired = false;
@@ -540,9 +541,9 @@ public class TARDISARSMethods {
     public boolean hasRenderer(UUID uuid) {
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", ids.get(uuid));
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
         if (rs.resultSet()) {
-            return !rs.getRenderer().isEmpty();
+            return !rs.getTardis().getRenderer().isEmpty();
         }
         return false;
     }
@@ -556,7 +557,7 @@ public class TARDISARSMethods {
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", id);
         where.put("uuid", uuid);
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
         return rs.resultSet();
     }
 }

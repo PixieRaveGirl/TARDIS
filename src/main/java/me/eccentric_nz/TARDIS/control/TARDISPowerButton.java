@@ -68,7 +68,7 @@ public class TARDISPowerButton {
                 TARDISMessage.send(player, "POWER_NO");
                 return;
             }
-            TARDISSounds.playTARDISSound(loc, player, "power_down");
+            TARDISSounds.playTARDISSound(loc, "power_down");
             // power down
             setp.put("powered_on", 0);
             TARDISMessage.send(player, "POWER_OFF");
@@ -93,14 +93,14 @@ public class TARDISPowerButton {
                 new TARDISLampToggler(plugin).flickSwitch(id, player.getUniqueId(), true, lanterns);
             }
             // if beacon is on turn it off
-            new TARDISBeaconToggler(plugin).flickSwitch(player.getUniqueId(), false);
+            new TARDISBeaconToggler(plugin).flickSwitch(player.getUniqueId(), id, false);
         } else {
             // don't power up if there is no power
             if (level <= plugin.getArtronConfig().getInt("standby")) {
                 TARDISMessage.send(player, "POWER_LOW");
                 return;
             }
-            TARDISSounds.playTARDISSound(loc, player, "power_up");
+            TARDISSounds.playTARDISSound(loc, "power_up");
             // power up
             setp.put("powered_on", 1);
             TARDISMessage.send(player, "POWER_ON");
@@ -118,7 +118,7 @@ public class TARDISPowerButton {
             }
             // if beacon is off turn it on
             if (beacon_on) {
-                new TARDISBeaconToggler(plugin).flickSwitch(player.getUniqueId(), true);
+                new TARDISBeaconToggler(plugin).flickSwitch(player.getUniqueId(), id, true);
             }
             // police box lamp
             if (preset.equals(PRESET.NEW) || preset.equals(PRESET.OLD)) {

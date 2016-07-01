@@ -17,14 +17,18 @@
 package me.eccentric_nz.TARDIS.commands.tardis;
 
 import java.util.HashMap;
+import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.api.Parameters;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.destroyers.DestroyData;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.FLAG;
 import me.eccentric_nz.TARDIS.travel.TARDISTimeTravel;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -55,25 +59,27 @@ public class TARDISComehereCommand {
     public boolean doComeHere(Player player) {
         if (player.hasPermission("tardis.timetravel")) {
             // check they are a timelord
+            UUID uuid = player.getUniqueId();
             HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            where.put("uuid", uuid.toString());
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (!rs.resultSet()) {
                 TARDISMessage.send(player, "NOT_A_TIMELORD");
                 return true;
             }
-            if (plugin.getConfig().getString("preferences.difficulty").equalsIgnoreCase("easy") || plugin.getUtils().inGracePeriod(player, true)) {
-                final int id = rs.getTardis_id();
-                if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+            if (plugin.getDifficulty().equals(DIFFICULTY.EASY) || plugin.getUtils().inGracePeriod(player, true)) {
+                Tardis tardis = rs.getTardis();
+                final int id = tardis.getTardis_id();
+                if (plugin.getConfig().getBoolean("allow.power_down") && !tardis.isPowered_on()) {
                     TARDISMessage.send(player, "POWER_DOWN");
                     return true;
                 }
-                int level = rs.getArtron_level();
+                int level = tardis.getArtron_level();
                 boolean chamtmp = false;
                 if (plugin.getConfig().getBoolean("travel.chameleon")) {
-                    chamtmp = rs.isChamele_on();
+                    chamtmp = tardis.isChamele_on();
                 }
-                boolean hidden = rs.isHidden();
+                boolean hidden = tardis.isHidden();
                 // get location
                 Location eyeLocation = player.getTargetBlock(plugin.getGeneralKeeper().getTransparent(), 50).getLocation();
                 if (!plugin.getConfig().getBoolean("travel.include_default_world") && plugin.getConfig().getBoolean("creation.default_world") && eyeLocation.getWorld().getName().equals(plugin.getConfig().getString("creation.default_world_name"))) {
@@ -89,6 +95,10 @@ public class TARDISComehereCommand {
                         TARDISMessage.send(player, "EXILE_NO_TRAVEL");
                         return true;
                     }
+                }
+                if (plugin.getTrackerKeeper().getDispersedTARDII().contains(id)) {
+                    TARDISMessage.send(player.getPlayer(), "NOT_WHILE_DISPERSED");
+                    return true;
                 }
                 if (!plugin.getTardisArea().areaCheckInExisting(eyeLocation)) {
                     TARDISMessage.send(player, "AREA_NO_COMEHERE", ChatColor.AQUA + "/tardistravel area [area name]");
@@ -107,7 +117,7 @@ public class TARDISComehereCommand {
                 }
                 // check they are not in the tardis
                 HashMap<String, Object> wherettrav = new HashMap<String, Object>();
-                wherettrav.put("uuid", player.getUniqueId().toString());
+                wherettrav.put("uuid", uuid.toString());
                 wherettrav.put("tardis_id", id);
                 ResultSetTravellers rst = new ResultSetTravellers(plugin, wherettrav, false);
                 if (rst.resultSet()) {
@@ -197,49 +207,53 @@ public class TARDISComehereCommand {
                     HashMap<String, Object> ttid = new HashMap<String, Object>();
                     ttid.put("tardis_id", id);
                     qf.doUpdate("tardis", sett, ttid);
+                    // restore biome
+                    plugin.getUtils().restoreBiome(oldSave, biome);
                 }
                 qf.doUpdate("current", set, tid);
                 TARDISMessage.send(player, "TARDIS_COMING");
-                boolean mat = plugin.getConfig().getBoolean("police_box.materialise");
-                long delay = (mat) ? 1L : 180L;
+//                boolean mat = plugin.getConfig().getBoolean("police_box.materialise");
+//                long delay = (mat) ? 1L : 180L;
+                long delay = 1L;
                 plugin.getTrackerKeeper().getInVortex().add(id);
                 final boolean hid = hidden;
-                final TARDISMaterialisationData pdd = new TARDISMaterialisationData();
-                pdd.setChameleon(cham);
-                pdd.setDirection(d);
-                pdd.setLocation(oldSave);
-                pdd.setDematerialise(mat);
-                pdd.setPlayer(player);
-                pdd.setHide(false);
-                pdd.setOutside(true);
-                pdd.setSubmarine(rsc.isSubmarine());
-                pdd.setTardisID(id);
-                pdd.setBiome(biome);
-                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!hid) {
-                            plugin.getTrackerKeeper().getDematerialising().add(id);
-                            plugin.getPresetDestroyer().destroyPreset(pdd);
-                        } else {
-                            plugin.getPresetDestroyer().removeBlockProtection(id, qf);
+                if (!plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                    final DestroyData dd = new DestroyData(plugin, uuid.toString());
+                    dd.setChameleon(cham);
+                    dd.setDirection(d);
+                    dd.setLocation(oldSave);
+                    dd.setPlayer(player);
+                    dd.setHide(false);
+                    dd.setOutside(true);
+                    dd.setSubmarine(rsc.isSubmarine());
+                    dd.setTardisID(id);
+                    dd.setBiome(biome);
+                    plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!hid) {
+                                plugin.getTrackerKeeper().getDematerialising().add(id);
+                                plugin.getPresetDestroyer().destroyPreset(dd);
+                            } else {
+                                plugin.getPresetDestroyer().removeBlockProtection(id, qf);
+                            }
                         }
-                    }
-                }, delay);
-                final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-                pbd.setChameleon(cham);
-                pbd.setDirection(player_d);
-                pbd.setLocation(eyeLocation);
-                pbd.setMalfunction(false);
-                pbd.setOutside(true);
-                pbd.setPlayer(player);
-                pbd.setRebuild(false);
-                pbd.setSubmarine(sub);
-                pbd.setTardisID(id);
+                    }, delay);
+                }
+                final BuildData bd = new BuildData(plugin, uuid.toString());
+                bd.setChameleon(cham);
+                bd.setDirection(player_d);
+                bd.setLocation(eyeLocation);
+                bd.setMalfunction(false);
+                bd.setOutside(true);
+                bd.setPlayer(player);
+                bd.setRebuild(false);
+                bd.setSubmarine(sub);
+                bd.setTardisID(id);
                 plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                     @Override
                     public void run() {
-                        plugin.getPresetBuilder().buildPreset(pbd);
+                        plugin.getPresetBuilder().buildPreset(bd);
                     }
                 }, delay * 2);
                 // remove energy from TARDIS

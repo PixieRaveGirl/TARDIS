@@ -18,10 +18,10 @@ package me.eccentric_nz.TARDIS.junk;
 
 import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
 import me.eccentric_nz.TARDIS.commands.admin.TARDISDeleteCommand;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
+import me.eccentric_nz.TARDIS.destroyers.DestroyData;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.enumeration.SCHEMATIC;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -47,16 +47,10 @@ public class TARDISJunkDelete {
             TARDISMessage.send(sender, "CMD_ADMIN");
             return true;
         }
-        HashMap<String, Object> where = new HashMap<String, Object>();
-        where.put("uuid", "00000000-aaaa-bbbb-cccc-000000000000");
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-        if (rs.resultSet()) {
+        ResultSetTardisID rs = new ResultSetTardisID(plugin);
+        if (rs.fromUUID("00000000-aaaa-bbbb-cccc-000000000000")) {
             final int id = rs.getTardis_id();
             final SCHEMATIC junk = new SCHEMATIC("AIR", "junk", "Junk TARDIS", true, false, false, false, false);
-            String chunkLoc = rs.getChunk();
-            String[] cdata = chunkLoc.split(":");
-            final String name = cdata[0];
-            final World cw = plugin.getServer().getWorld(name);
             // get the current location
             Location bb_loc = null;
             Biome biome = null;
@@ -72,27 +66,29 @@ public class TARDISJunkDelete {
                 return true;
             }
             // destroy junk TARDIS
-            final TARDISMaterialisationData pdd = new TARDISMaterialisationData();
-            pdd.setChameleon(false);
-            pdd.setDirection(COMPASS.SOUTH);
-            pdd.setLocation(bb_loc);
-            pdd.setDematerialise(true);
-            pdd.setHide(false);
-            pdd.setOutside(false);
-            pdd.setSubmarine(rsc.isSubmarine());
-            pdd.setTardisID(id);
-            pdd.setBiome(biome);
-            plugin.getPresetDestroyer().destroyPreset(pdd);
+            final DestroyData dd = new DestroyData(plugin, "00000000-aaaa-bbbb-cccc-000000000000");
+            dd.setChameleon(false);
+            dd.setDirection(COMPASS.SOUTH);
+            dd.setLocation(bb_loc);
+            dd.setHide(false);
+            dd.setOutside(false);
+            dd.setSubmarine(rsc.isSubmarine());
+            dd.setTardisID(id);
+            dd.setBiome(biome);
+            plugin.getPresetDestroyer().destroyPreset(dd);
             // destroy the vortex TARDIS
+            final World cw = plugin.getServer().getWorld(plugin.getConfig().getString("creation.default_world_name"));
             // give the TARDIS time to remove itself as it's not hidden
-            plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                @Override
-                public void run() {
-                    plugin.getInteriorDestroyer().destroyInner(junk, id, cw, 0, "junk", -999);
-                    TARDISDeleteCommand.cleanDatabase(id);
-                    TARDISMessage.send(sender, "JUNK_DELETED");
-                }
-            }, 20L);
+            if (cw != null) {
+                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        plugin.getInteriorDestroyer().destroyInner(junk, id, cw, 0, "junk", -999);
+                        TARDISDeleteCommand.cleanDatabase(id);
+                        TARDISMessage.send(sender, "JUNK_DELETED");
+                    }
+                }, 20L);
+            }
         }
         return true;
     }

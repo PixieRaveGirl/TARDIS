@@ -39,6 +39,7 @@ public class TARDISMySQLDatabaseUpdater {
     private final List<String> prefsupdates = new ArrayList<String>();
     private final List<String> destsupdates = new ArrayList<String>();
     private final List<String> countupdates = new ArrayList<String>();
+    private final List<String> portalsupdates = new ArrayList<String>();
     private final List<String> inventoryupdates = new ArrayList<String>();
     private final HashMap<String, String> uuidUpdates = new HashMap<String, String>();
     private final Statement statement;
@@ -56,30 +57,40 @@ public class TARDISMySQLDatabaseUpdater {
         uuidUpdates.put("t_count", "t_id");
         uuidUpdates.put("tardis", "tardis_id");
         uuidUpdates.put("travellers", "tardis_id");
+        tardisupdates.add("hutch varchar(512) DEFAULT ''");
+        tardisupdates.add("last_known_name varchar(32) DEFAULT ''");
         tardisupdates.add("lights_on int(1) DEFAULT '1'");
+        tardisupdates.add("monsters int(2) DEFAULT '0'");
+        tardisupdates.add("abandoned int(1) DEFAULT '0'");
         tardisupdates.add("powered_on int(1) DEFAULT '0'");
         tardisupdates.add("renderer varchar(512) DEFAULT ''");
-        tardisupdates.add("hutch varchar(512) DEFAULT ''");
         tardisupdates.add("siege_on int(1) DEFAULT '0'");
         tardisupdates.add("zero varchar(512) DEFAULT ''");
-        tardisupdates.add("last_known_name varchar(32) DEFAULT ''");
-        prefsupdates.add("language varchar(32) DEFAULT 'AUTO_DETECT'");
+        tardisupdates.add("igloo varchar(512) DEFAULT ''");
+        prefsupdates.add("auto_siege_on int(1) DEFAULT '0'");
         prefsupdates.add("build_on int(1) DEFAULT '1'");
         prefsupdates.add("ctm_on int(1) DEFAULT '0'");
         prefsupdates.add("difficulty int(1) DEFAULT '0'");
-        prefsupdates.add("flying_mode int(1) DEFAULT '1'");
+        prefsupdates.add("dnd_on int(1) DEFAULT '0'");
         prefsupdates.add("farm_on int(1) DEFAULT '0'");
+        prefsupdates.add("flying_mode int(1) DEFAULT '1'");
+        prefsupdates.add("hads_type varchar(12) DEFAULT 'DISPLACEMENT'");
+        prefsupdates.add("hum varchar(24) DEFAULT ''");
+        prefsupdates.add("language varchar(32) DEFAULT 'AUTO_DETECT'");
         prefsupdates.add("lanterns_on int(1) DEFAULT '0'");
         prefsupdates.add("minecart_on int(1) DEFAULT '0'");
+        prefsupdates.add("policebox_textures_on int(1) DEFAULT '1'");
         prefsupdates.add("renderer_on int(1) DEFAULT '1'");
-        prefsupdates.add("sign_on int(1) DEFAULT '1'");
-        prefsupdates.add("wool_lights_on int(1) DEFAULT '0'");
-        prefsupdates.add("travelbar_on int(1) DEFAULT '0'");
-        prefsupdates.add("auto_siege_on int(1) DEFAULT '0'");
-        prefsupdates.add("siege_wall varchar(64) DEFAULT 'GREY_CLAY'");
         prefsupdates.add("siege_floor varchar(64) DEFAULT 'BLACK_CLAY'");
+        prefsupdates.add("siege_wall varchar(64) DEFAULT 'GREY_CLAY'");
+        prefsupdates.add("sign_on int(1) DEFAULT '1'");
+        prefsupdates.add("telepathy_on int(1) DEFAULT '0'");
+        prefsupdates.add("travelbar_on int(1) DEFAULT '0'");
+        prefsupdates.add("wool_lights_on int(1) DEFAULT '0'");
+        prefsupdates.add("auto_powerup_on int(1) DEFAULT '0'");
         destsupdates.add("slot int(1) DEFAULT '-1'");
         countupdates.add("grace int(3) DEFAULT '0'");
+        portalsupdates.add("abandoned int(1) DEFAULT '0'");
         inventoryupdates.add("attributes text");
         inventoryupdates.add("armour_attributes text");
     }
@@ -139,6 +150,16 @@ public class TARDISMySQLDatabaseUpdater {
                     statement.executeUpdate(c_alter);
                 }
             }
+            for (String o : portalsupdates) {
+                String[] osplit = o.split(" ");
+                String o_query = "SHOW COLUMNS FROM " + prefix + "portals LIKE '" + osplit[0] + "'";
+                ResultSet rso = statement.executeQuery(o_query);
+                if (!rso.next()) {
+                    i++;
+                    String o_alter = "ALTER TABLE " + prefix + "portals ADD " + o;
+                    statement.executeUpdate(o_alter);
+                }
+            }
             for (String v : inventoryupdates) {
                 String[] vsplit = v.split(" ");
                 String v_query = "SHOW COLUMNS FROM " + prefix + "inventories LIKE '" + vsplit[0] + "'";
@@ -148,6 +169,13 @@ public class TARDISMySQLDatabaseUpdater {
                     String v_alter = "ALTER TABLE " + prefix + "inventories ADD " + v;
                     statement.executeUpdate(v_alter);
                 }
+            }
+            // update data type for lamp in player_prefs
+            String lamp_check = "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = " + prefix + "'player_prefs' AND COLUMN_NAME = 'lamp'";
+            ResultSet rslc = statement.executeQuery(lamp_check);
+            if (rslc.next() && !rslc.getString("DATA_TYPE").equalsIgnoreCase("varchar")) {
+                String lamp_query = "ALTER TABLE " + prefix + "player_prefs CHANGE `lamp` `lamp` VARCHAR(64) NULL DEFAULT ''";
+                statement.executeUpdate(lamp_query);
             }
             // add biome to current location
             String bio_query = "SHOW COLUMNS FROM " + prefix + "current LIKE 'biome'";
@@ -164,6 +192,29 @@ public class TARDISMySQLDatabaseUpdater {
                 i++;
                 String park_alter = "ALTER TABLE " + prefix + "areas ADD parking_distance int(2) DEFAULT '2'";
                 statement.executeUpdate(park_alter);
+            }
+            // add tardis_id to dispersed
+            String dispersed_query = "SHOW COLUMNS FROM " + prefix + "dispersed LIKE 'tardis_id'";
+            ResultSet rsdispersed = statement.executeQuery(dispersed_query);
+            if (!rsdispersed.next()) {
+                i++;
+                String dispersed_alter = "ALTER TABLE " + prefix + "dispersed ADD tardis_id int(11)";
+                statement.executeUpdate(dispersed_alter);
+                // update tardis_id column for existing records
+                new TARDISDispersalUpdater(plugin).updateTardis_ids();
+            }
+            // transfer `void` data to `thevoid`, then remove `void` table
+            String voidQuery = "SHOW TABLES LIKE '" + prefix + "void'";
+            ResultSet rsvoid = statement.executeQuery(voidQuery);
+            if (rsvoid.next()) {
+                String getVoid = "SELECT * FROM '" + prefix + "void'";
+                ResultSet rsv = statement.executeQuery(getVoid);
+                while (rsv.next()) {
+                    String transfer = "INSERT IGNORE INTO " + prefix + "thevoid (tardis_id) VALUES (" + rsv.getInt("tardis_id") + ")";
+                    statement.executeUpdate(transfer);
+                }
+                String delVoid = "DROP TABLE '" + prefix + "void'";
+                statement.executeUpdate(delVoid);
             }
         } catch (SQLException e) {
             plugin.debug("MySQL database add fields error: " + e.getMessage() + e.getErrorCode());

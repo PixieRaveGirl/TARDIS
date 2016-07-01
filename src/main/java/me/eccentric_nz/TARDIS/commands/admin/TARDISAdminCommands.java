@@ -23,7 +23,9 @@ import java.util.Locale;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.arch.TARDISArchCommand;
 import me.eccentric_nz.TARDIS.commands.TARDISCommandHelper;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
+import me.eccentric_nz.TARDIS.planets.TARDISSkaro;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -56,6 +58,7 @@ public class TARDISAdminCommands implements CommandExecutor {
         firstsStr.put("add_regions", "");
         firstsStr.put("arch", "");
         firstsStr.put("area", "creation");
+        firstsStr.put("assemble", "");
         firstsStr.put("chunks", "");
         firstsStr.put("condenser", "");
         firstsStr.put("config", "");
@@ -85,16 +88,21 @@ public class TARDISAdminCommands implements CommandExecutor {
         firstsStr.put("purge", "");
         firstsStr.put("purge_portals", "");
         firstsStr.put("recharger", "");
+        firstsStr.put("region_flag", "");
         firstsStr.put("reload", "");
         firstsStr.put("remove_flag", "");
         firstsStr.put("respect_towny", "preferences");
         firstsStr.put("respect_worldguard", "preferences");
         firstsStr.put("siege", "siege");
         firstsStr.put("sign_colour", "police_box");
+        firstsStr.put("skaro", "");
+        firstsStr.put("tardis_lamp", "police_box");
+        firstsStr.put("vortex_fall", "preferences");
         firstsStrArtron.add("full_charge_item");
         firstsStrArtron.add("jettison_seed");
         // boolean
         firstsBool.put("3d_doors", "allow");
+        firstsBool.put("abandon", "abandon.enable");
         firstsBool.put("achievements", "allow");
         firstsBool.put("add_perms", "creation");
         firstsBool.put("all_blocks", "allow");
@@ -121,10 +129,14 @@ public class TARDISAdminCommands implements CommandExecutor {
         firstsBool.put("mob_farming", "allow");
         firstsBool.put("name_tardis", "police_box");
         firstsBool.put("nether", "travel");
+        firstsBool.put("open_door_policy", "preferences");
+        firstsBool.put("particles", "artron_furnace");
         firstsBool.put("per_world_perms", "travel");
+        firstsBool.put("perception_filter", "allow");
         firstsBool.put("power_down", "allow");
         firstsBool.put("power_down_on_quit", "allow");
         firstsBool.put("redefine", "travel.terminal");
+        firstsBool.put("reduce_count", "abandon");
         firstsBool.put("render_entities", "preferences");
         firstsBool.put("respect_factions", "preferences");
         firstsBool.put("respect_grief_prevention", "preferences");
@@ -137,6 +149,7 @@ public class TARDISAdminCommands implements CommandExecutor {
         firstsBool.put("spawn_eggs", "allow");
         firstsBool.put("spawn_random_monsters", "preferences");
         firstsBool.put("strike_lightning", "preferences");
+        firstsBool.put("switch_resource_packs", "");
         firstsBool.put("the_end", "travel");
         firstsBool.put("tp_switch", "allow");
         firstsBool.put("use_block_stack", "creation");
@@ -172,14 +185,11 @@ public class TARDISAdminCommands implements CommandExecutor {
         firstsInt.put("malfunction_end", "preferences");
         firstsInt.put("malfunction_nether", "preferences");
         firstsInt.put("min_time", "arch");
-        firstsInt.put("platform_data", "police_box");
-        firstsInt.put("platform_id", "police_box");
         firstsInt.put("random_attempts", "travel");
         firstsInt.put("random_circuit", "travel");
         firstsInt.put("room_speed", "growth");
         firstsInt.put("rooms_condenser_percent", "growth");
         firstsInt.put("sfx_volume", "preferences");
-        firstsInt.put("tardis_lamp", "police_box");
         firstsInt.put("terminal_step", "travel");
         firstsInt.put("timeout", "travel");
         firstsInt.put("timeout_height", "travel");
@@ -218,6 +228,15 @@ public class TARDISAdminCommands implements CommandExecutor {
                     return false;
                 }
                 if (args.length == 1) {
+                    if (first.equals("skaro")) {
+                        if (plugin.getServer().getWorld("Skaro") == null) {
+                            new TARDISSkaro(plugin).createDalekWorld();
+                            plugin.getPlanetsConfig().set("planets.Skaro.enabled", true);
+                        } else {
+                            TARDISMessage.send(sender, "WORLD_EXISTS", "Skaro");
+                        }
+                        return true;
+                    }
                     if (first.equals("chunks")) {
                         return new TARDISChunksCommand(plugin).listChunks(sender);
                     }
@@ -253,6 +272,9 @@ public class TARDISAdminCommands implements CommandExecutor {
                 }
                 if (first.equals("area")) {
                     plugin.getConfig().set("creation.area", args[1]);
+                }
+                if (first.equals("assemble")) {
+                    return new TARDISAssembleCommand(plugin).assemble(sender, args[1]);
                 }
                 if (first.equals("config")) {
                     return new TARDISConfigCommand(plugin).showConfigOptions(sender, args);
@@ -307,7 +329,7 @@ public class TARDISAdminCommands implements CommandExecutor {
                 if (first.equals("delete")) {
                     return new TARDISDeleteCommand(plugin).deleteTARDIS(sender, args);
                 }
-                if (first.equals("key") || first.equals("custom_schematic_seed")) {
+                if (first.equals("key") || first.equals("custom_schematic_seed") || first.equals("tardis_lamp")) {
                     return new TARDISSetMaterialCommand(plugin).setConfigMaterial(sender, args, firstsStr.get(first));
                 }
                 if (first.equals("full_charge_item") || first.equals("jettison_seed")) {
@@ -326,11 +348,12 @@ public class TARDISAdminCommands implements CommandExecutor {
                     return new TARDISSetRespectCommand(plugin).setFlag(sender, args);
                 }
                 if (first.equals("difficulty")) {
-                    if (!args[1].equalsIgnoreCase("easy") && !args[1].equalsIgnoreCase("hard")) {
+                    if (!args[1].equalsIgnoreCase("easy") && !args[1].equalsIgnoreCase("medium") && !args[1].equalsIgnoreCase("hard")) {
                         TARDISMessage.send(sender, "ARG_DIFF");
                         return true;
                     }
                     plugin.getConfig().set("preferences.difficulty", args[1].toLowerCase(Locale.ENGLISH));
+                    plugin.setDifficulty(DIFFICULTY.valueOf(args[1].toUpperCase()));
                 }
                 if (first.equals("default_preset")) {
                     try {
@@ -353,6 +376,16 @@ public class TARDISAdminCommands implements CommandExecutor {
                 }
                 if (first.equals("exclude") || first.equals("include")) {
                     return new TARDISSetWorldInclusionCommand(plugin).setWorldStatus(sender, args);
+                }
+                if (first.equals("region_flag")) {
+                    return new TARDISRegionFlagCommand(plugin).toggleEntryExit(sender, args);
+                }
+                if (first.equals("vortex_fall")) {
+                    if (!args[1].equalsIgnoreCase("kill") && !args[1].equalsIgnoreCase("teleport")) {
+                        TARDISMessage.send(sender, "ARG_VORTEX");
+                        return true;
+                    }
+                    plugin.getConfig().set("preferences.vortex_fall", args[1].toLowerCase(Locale.ENGLISH));
                 }
                 // checks if its a boolean config option
                 if (firstsBool.containsKey(first)) {

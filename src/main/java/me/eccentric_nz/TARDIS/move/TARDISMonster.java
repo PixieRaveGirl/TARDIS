@@ -17,8 +17,10 @@
 package me.eccentric_nz.TARDIS.move;
 
 import me.eccentric_nz.TARDIS.mobfarming.TARDISMob;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Skeleton.SkeletonType;
+import org.bukkit.entity.Villager.Profession;
 import org.bukkit.inventory.EntityEquipment;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
 /**
@@ -30,10 +32,12 @@ public class TARDISMonster extends TARDISMob {
     private boolean aggressive;
     private int anger;
     private boolean charged;
-    private boolean villager;
-    private ItemStack itemInHand;
+    private Profession profession;
     private EntityEquipment equipment;
     private MaterialData carried;
+    private EntityType passenger;
+    private SkeletonType skeletonType;
+    private String displayName;
     private int size;
 
     public boolean isAggressive() {
@@ -60,20 +64,12 @@ public class TARDISMonster extends TARDISMob {
         this.charged = charged;
     }
 
-    public boolean isVillager() {
-        return villager;
+    public Profession getProfession() {
+        return profession;
     }
 
-    public void setVillager(boolean villager) {
-        this.villager = villager;
-    }
-
-    public ItemStack getItemInHand() {
-        return itemInHand;
-    }
-
-    public void setItemInHand(ItemStack itemInHand) {
-        this.itemInHand = itemInHand;
+    public void setProfession(Profession profession) {
+        this.profession = profession;
     }
 
     public EntityEquipment getEquipment() {
@@ -90,6 +86,30 @@ public class TARDISMonster extends TARDISMob {
 
     public void setCarried(MaterialData carried) {
         this.carried = carried;
+    }
+
+    public EntityType getPassenger() {
+        return passenger;
+    }
+
+    public void setPassenger(EntityType passenger) {
+        this.passenger = passenger;
+    }
+
+    public SkeletonType getSkeletonType() {
+        return skeletonType;
+    }
+
+    public void setSkeletonType(SkeletonType skeletonType) {
+        this.skeletonType = skeletonType;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 
     public int getSize() {

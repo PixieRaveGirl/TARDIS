@@ -20,12 +20,12 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.move.TARDISTeleportLocation;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISNumberParsers;
@@ -45,23 +45,22 @@ public class TARDISListTardisesCommand {
     }
 
     public boolean listTardises(CommandSender sender, String[] args) {
-        if (args.length > 1 && (args[1].equalsIgnoreCase("save") || args[1].equalsIgnoreCase("portals"))) {
+        if (args.length > 1 && (args[1].equalsIgnoreCase("save") || args[1].equalsIgnoreCase("portals") || args[1].equalsIgnoreCase("abandoned"))) {
             if (args[1].equalsIgnoreCase("save")) {
-                ResultSetTardis rsl = new ResultSetTardis(plugin, null, "", true);
+                ResultSetTardis rsl = new ResultSetTardis(plugin, new HashMap<String, Object>(), "", true, 1);
                 if (rsl.resultSet()) {
-                    ArrayList<HashMap<String, String>> data = rsl.getData();
                     String file = plugin.getDataFolder() + File.separator + "TARDIS_list.txt";
                     try {
                         BufferedWriter bw = new BufferedWriter(new FileWriter(file, false));
-                        for (HashMap<String, String> map : data) {
+                        for (Tardis t : rsl.getData()) {
                             HashMap<String, Object> wherecl = new HashMap<String, Object>();
-                            wherecl.put("tardis_id", TARDISNumberParsers.parseInt(map.get("tardis_id")));
+                            wherecl.put("tardis_id", t.getTardis_id());
                             ResultSetCurrentLocation rsc = new ResultSetCurrentLocation(plugin, wherecl);
                             if (!rsc.resultSet()) {
                                 TARDISMessage.send(sender, "CURRENT_NOT_FOUND");
                                 return true;
                             }
-                            String line = "Time Lord: " + map.get("owner") + ", Location: " + rsc.getWorld().getName() + ":" + rsc.getX() + ":" + rsc.getY() + ":" + rsc.getZ();
+                            String line = "Time Lord: " + t.getOwner() + ", Location: " + rsc.getWorld().getName() + ":" + rsc.getX() + ":" + rsc.getY() + ":" + rsc.getZ();
                             bw.write(line);
                             bw.newLine();
                         }
@@ -72,10 +71,13 @@ public class TARDISListTardisesCommand {
                 }
                 TARDISMessage.send(sender, "FILE_SAVED");
                 return true;
-            } else {
+            } else if (args[1].equalsIgnoreCase("portals")) {
                 for (Map.Entry<Location, TARDISTeleportLocation> map : plugin.getTrackerKeeper().getPortals().entrySet()) {
                     sender.sendMessage("TARDIS id: " + map.getValue().getTardisId() + " has a portal open at: " + map.getKey().toString());
                 }
+                return true;
+            } else {
+                new TARDISAbandonLister(plugin).list(sender);
                 return true;
             }
         } else {
@@ -87,19 +89,18 @@ public class TARDISListTardisesCommand {
                 end = tmp * 18;
             }
             String limit = start + ", " + end;
-            ResultSetTardis rsl = new ResultSetTardis(plugin, null, limit, true);
+            ResultSetTardis rsl = new ResultSetTardis(plugin, new HashMap<String, Object>(), limit, true, 1);
             if (rsl.resultSet()) {
                 TARDISMessage.send(sender, "TARDIS_LOCS");
-                ArrayList<HashMap<String, String>> data = rsl.getData();
-                for (HashMap<String, String> map : data) {
+                for (Tardis t : rsl.getData()) {
                     HashMap<String, Object> wherecl = new HashMap<String, Object>();
-                    wherecl.put("tardis_id", TARDISNumberParsers.parseInt(map.get("tardis_id")));
+                    wherecl.put("tardis_id", t.getTardis_id());
                     ResultSetCurrentLocation rsc = new ResultSetCurrentLocation(plugin, wherecl);
                     if (!rsc.resultSet()) {
                         TARDISMessage.send(sender, "CURRENT_NOT_FOUND");
                         return true;
                     }
-                    sender.sendMessage("Time Lord: " + map.get("owner") + ", Location: " + rsc.getWorld().getName() + ":" + rsc.getX() + ":" + rsc.getY() + ":" + rsc.getZ());
+                    sender.sendMessage("Time Lord: " + t.getOwner() + ", Location: " + rsc.getWorld().getName() + ":" + rsc.getX() + ":" + rsc.getY() + ":" + rsc.getZ());
                 }
                 TARDISMessage.send(sender, "TARDIS_LOCS_INFO");
             } else {

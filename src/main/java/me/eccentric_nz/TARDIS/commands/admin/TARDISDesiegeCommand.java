@@ -19,10 +19,10 @@ package me.eccentric_nz.TARDIS.commands.admin;
 import java.util.HashMap;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetHomeLocation;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
 import org.bukkit.block.Biome;
@@ -48,10 +48,8 @@ public class TARDISDesiegeCommand {
             // get the player's UUID
             UUID uuid = p.getUniqueId();
             // get the player's TARDIS id
-            HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("uuid", uuid.toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-            if (!rs.resultSet()) {
+            ResultSetTardisID rs = new ResultSetTardisID(plugin);
+            if (!rs.fromUUID(uuid.toString())) {
                 TARDISMessage.send(sender, "PLAYER_NOT_FOUND_DB", args[1]);
                 return true;
             }
@@ -84,18 +82,18 @@ public class TARDISDesiegeCommand {
                 setc.put("submarine", (rsh.isSubmarine()) ? 1 : 0);
                 qf.doUpdate("current", setc, wherec);
                 // rebuild the TARDIS
-                final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-                pbd.setChameleon(false);
-                pbd.setDirection(rsh.getDirection());
-                pbd.setLocation(new Location(rsh.getWorld(), rsh.getX(), rsh.getY(), rsh.getZ()));
-                pbd.setMalfunction(false);
-                pbd.setOutside(false);
-                pbd.setPlayer(p);
-                pbd.setRebuild(true);
-                pbd.setSubmarine(rsh.isSubmarine());
-                pbd.setTardisID(id);
-                pbd.setBiome(Biome.PLAINS);
-                plugin.getPresetBuilder().buildPreset(pbd);
+                final BuildData bd = new BuildData(plugin, uuid.toString());
+                bd.setChameleon(false);
+                bd.setDirection(rsh.getDirection());
+                bd.setLocation(new Location(rsh.getWorld(), rsh.getX(), rsh.getY(), rsh.getZ()));
+                bd.setMalfunction(false);
+                bd.setOutside(false);
+                bd.setPlayer(p);
+                bd.setRebuild(true);
+                bd.setSubmarine(rsh.isSubmarine());
+                bd.setTardisID(id);
+                bd.setBiome(Biome.PLAINS);
+                plugin.getPresetBuilder().buildPreset(bd);
                 TARDISMessage.send(sender, "SIEGE_REBUILT");
             }
             return true;

@@ -19,14 +19,18 @@ package me.eccentric_nz.TARDIS.utility;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
-import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
+import me.eccentric_nz.TARDIS.companionGUI.TARDISCompanionInventory;
 import me.eccentric_nz.TARDIS.database.ResultSetAreas;
 import me.eccentric_nz.TARDIS.database.ResultSetDestinations;
 import me.eccentric_nz.TARDIS.database.ResultSetHomeLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Area;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * The Zygons are a race of metamorphic humanoids. They originated from the
@@ -58,39 +62,40 @@ public class TARDISLister {
             int a = 1;
 
             for (String s : therechargers) {
-                if (a == 1) {
-                    TARDISMessage.send(p, "CHARGERS");
+                // only list public rechargers
+                if (!s.startsWith("rift")) {
+                    if (a == 1) {
+                        TARDISMessage.send(p, "CHARGERS");
+                    }
+                    String w = TARDIS.plugin.getConfig().getString("rechargers." + s + ".world");
+                    int x = TARDIS.plugin.getConfig().getInt("rechargers." + s + ".x");
+                    int y = TARDIS.plugin.getConfig().getInt("rechargers." + s + ".y");
+                    int z = TARDIS.plugin.getConfig().getInt("rechargers." + s + ".z");
+                    p.sendMessage(a + ". [" + s + "] in world: " + w + ", at " + x + ":" + y + ":" + z);
+                    a++;
                 }
-                String w = TARDIS.plugin.getConfig().getString("rechargers." + s + ".world");
-                int x = TARDIS.plugin.getConfig().getInt("rechargers." + s + ".x");
-                int y = TARDIS.plugin.getConfig().getInt("rechargers." + s + ".y");
-                int z = TARDIS.plugin.getConfig().getInt("rechargers." + s + ".z");
-                p.sendMessage(a + ". [" + s + "] in world: " + w + ", at " + x + ":" + y + ":" + z);
-                a++;
             }
         }
         if (l.equals("areas")) {
-            ResultSetAreas rsa = new ResultSetAreas(TARDIS.plugin, null, true);
-            int a = 1;
+            ResultSetAreas rsa = new ResultSetAreas(TARDIS.plugin, null, true, false);
+            int n = 1;
             if (!rsa.resultSet()) {
                 TARDISMessage.send(p, "AREA_NONE");
             }
-            ArrayList<HashMap<String, String>> data = rsa.getData();
-            for (HashMap<String, String> map : data) {
-                String name = map.get("area_name");
-                String world = map.get("world");
-                if (a == 1) {
+            for (Area a : rsa.getData()) {
+                if (n == 1) {
                     TARDISMessage.send(p, "AREAS");
                 }
-                p.sendMessage(a + ". [" + name + "] in world: " + world);
-                a++;
+                p.sendMessage(n + ". [" + a.getAreaName() + "] in world: " + a.getWorld());
+                n++;
             }
         } else {
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", p.getUniqueId().toString());
-            ResultSetTardis rst = new ResultSetTardis(TARDIS.plugin, where, "", false);
+            ResultSetTardis rst = new ResultSetTardis(TARDIS.plugin, where, "", false, 0);
             if (rst.resultSet()) {
-                int id = rst.getTardis_id();
+                Tardis tardis = rst.getTardis();
+                int id = tardis.getTardis_id();
                 // list TARDIS saves
                 if (l.equalsIgnoreCase("saves")) {
                     // get home
@@ -122,14 +127,14 @@ public class TARDISLister {
                 }
                 if (l.equalsIgnoreCase("companions")) {
                     // list companions
-                    String comps = rst.getCompanions();
+                    String comps = tardis.getCompanions();
                     if (comps != null && !comps.isEmpty()) {
                         String[] companionData = comps.split(":");
-                        p.sendMessage(ChatColor.AQUA + plugin.getLanguage().getString("COMPANIONS"));
-                        for (String c : companionData) {
-                            String com = plugin.getServer().getOfflinePlayer(UUID.fromString(c)).getName();
-                            p.sendMessage(ChatColor.AQUA + com);
-                        }
+                        ItemStack[] heads = new TARDISCompanionInventory(plugin, companionData).getSkulls();
+                        // open the GUI
+                        Inventory inv = plugin.getServer().createInventory(p, 54, "§4Companions");
+                        inv.setContents(heads);
+                        p.openInventory(inv);
                     } else {
                         TARDISMessage.send(p, "COMPANIONS_NONE");
                     }

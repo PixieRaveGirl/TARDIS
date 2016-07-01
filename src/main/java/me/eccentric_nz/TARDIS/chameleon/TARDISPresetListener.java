@@ -24,6 +24,8 @@ import me.eccentric_nz.TARDIS.advanced.TARDISCircuitDamager;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.DISK_CIRCUIT;
 import me.eccentric_nz.TARDIS.listeners.TARDISMenuListener;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -75,12 +77,15 @@ public class TARDISPresetListener extends TARDISMenuListener implements Listener
                         int id = rst.getTardis_id();
                         HashMap<String, Object> where = new HashMap<String, Object>();
                         where.put("tardis_id", id);
-                        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+                        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
                         if (rs.resultSet()) {
-                            final boolean bool = rs.isChamele_on();
-                            final boolean adapt = rs.isAdapti_on();
-                            String preset = rs.getPreset().toString();
+                            Tardis tardis = rs.getTardis();
+                            String last_line = TARDISStaticUtils.getLastLine(tardis.getChameleon());
+                            final boolean bool = tardis.isChamele_on();
+                            final boolean adapt = tardis.isAdapti_on();
+                            String preset = tardis.getPreset().toString();
                             HashMap<String, Object> set = new HashMap<String, Object>();
+                            HashMap<String, Object> set_oo = new HashMap<String, Object>();
                             QueryFactory qf = new QueryFactory(plugin);
                             HashMap<String, Object> wherec = new HashMap<String, Object>();
                             wherec.put("tardis_id", id);
@@ -90,7 +95,7 @@ public class TARDISPresetListener extends TARDISMenuListener implements Listener
                                     String onoff;
                                     String engage;
                                     int oo;
-                                    if (rs.isChamele_on()) {
+                                    if (tardis.isChamele_on()) {
                                         onoff = ChatColor.RED + plugin.getLanguage().getString("SET_OFF");
                                         engage = plugin.getLanguage().getString("SET_ON");
                                         oo = 0;
@@ -103,14 +108,14 @@ public class TARDISPresetListener extends TARDISMenuListener implements Listener
                                     im.setLore(Arrays.asList(onoff, String.format(plugin.getLanguage().getString("CHAM_CLICK"), engage)));
                                     is.setItemMeta(im);
                                     // set sign text
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 2, onoff, player);
-                                    set.put("chamele_on", oo);
+                                    TARDISStaticUtils.setSign(tardis.getChameleon(), 2, onoff, player);
+                                    set_oo.put("chamele_on", oo);
                                     break;
                                 case 2:
                                     player.performCommand("tardis rebuild");
                                     close(player);
                                     // damage the circuit if configured
-                                    if (plugin.getConfig().getBoolean("circuits.damage") && plugin.getConfig().getString("preferences.difficulty").equals("hard") && plugin.getConfig().getInt("circuits.uses.chameleon") > 0) {
+                                    if (plugin.getConfig().getBoolean("circuits.damage") && !plugin.getDifficulty().equals(DIFFICULTY.EASY) && plugin.getConfig().getInt("circuits.uses.chameleon") > 0) {
                                         TARDISCircuitChecker tcc = new TARDISCircuitChecker(plugin, id);
                                         tcc.getCircuits();
                                         // decrement uses
@@ -123,7 +128,7 @@ public class TARDISPresetListener extends TARDISMenuListener implements Listener
                                     String biome;
                                     String to_turn;
                                     int ba;
-                                    if (rs.isAdapti_on()) {
+                                    if (tardis.isAdapti_on()) {
                                         biome = ChatColor.RED + plugin.getLanguage().getString("SET_OFF");
                                         to_turn = plugin.getLanguage().getString("SET_ON");
                                         ba = 0;
@@ -135,7 +140,7 @@ public class TARDISPresetListener extends TARDISMenuListener implements Listener
                                     ItemMeta bio = is.getItemMeta();
                                     bio.setLore(Arrays.asList(biome, String.format(plugin.getLanguage().getString("CHAM_CLICK"), to_turn)));
                                     is.setItemMeta(bio);
-                                    set.put("adapti_on", ba);
+                                    set_oo.put("adapti_on", ba);
                                     break;
                                 case 8:
                                     // page three
@@ -153,110 +158,146 @@ public class TARDISPresetListener extends TARDISMenuListener implements Listener
                                     break;
                                 case 18:
                                     // custom
-                                    set.put("chameleon_preset", "CUSTOM");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "CUSTOM", player);
+                                    if (!last_line.equals("CUSTOM")) {
+                                        set.put("chameleon_preset", "CUSTOM");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "CUSTOM", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Server's Custom");
                                     break;
                                 case 20:
                                     // Cake
-                                    set.put("chameleon_preset", "CAKE");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "CAKE", player);
+                                    if (!last_line.equals("CAKE")) {
+                                        set.put("chameleon_preset", "CAKE");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "CAKE", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Birthday Cake");
                                     break;
                                 case 22:
                                     // Gravestone
-                                    set.put("chameleon_preset", "GRAVESTONE");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "GRAVESTONE", player);
+                                    if (!last_line.equals("GRAVESTONE")) {
+                                        set.put("chameleon_preset", "GRAVESTONE");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "GRAVESTONE", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Gravestone");
                                     break;
                                 case 24:
                                     // Topsy-turvey
-                                    set.put("chameleon_preset", "TOPSYTURVEY");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "TOPSYTURVEY", player);
+                                    if (!last_line.equals("TOPSYTURVEY")) {
+                                        set.put("chameleon_preset", "TOPSYTURVEY");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "TOPSYTURVEY", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Topsy-turvey");
                                     break;
                                 case 26:
                                     // Mushroom
-                                    set.put("chameleon_preset", "SHROOM");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "SHROOM", player);
+                                    if (!last_line.equals("SHROOM")) {
+                                        set.put("chameleon_preset", "SHROOM");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "SHROOM", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Mushroom");
                                     break;
                                 case 28:
                                     // Rubber Duck
-                                    set.put("chameleon_preset", "DUCK");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "DUCK", player);
+                                    if (!last_line.equals("DUCK")) {
+                                        set.put("chameleon_preset", "DUCK");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "DUCK", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Rubber Duck");
                                     break;
                                 case 30:
                                     // Mineshaft
-                                    set.put("chameleon_preset", "MINESHAFT");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "MINESHAFT", player);
+                                    if (!last_line.equals("MINESHAFT")) {
+                                        set.put("chameleon_preset", "MINESHAFT");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "MINESHAFT", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Mineshaft");
                                     break;
                                 case 32:
                                     // Creepy
-                                    set.put("chameleon_preset", "CREEPY");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "CREEPY", player);
+                                    if (!last_line.equals("CREEPY")) {
+                                        set.put("chameleon_preset", "CREEPY");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "CREEPY", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Creepy");
                                     break;
                                 case 34:
                                     // Peanut Butter Jar
-                                    set.put("chameleon_preset", "PEANUT");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "PEANUT", player);
+                                    if (!last_line.equals("PEANUT")) {
+                                        set.put("chameleon_preset", "PEANUT");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "PEANUT", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Peanut Butter Jar");
                                     break;
                                 case 36:
                                     // Lamp Post
-                                    set.put("chameleon_preset", "LAMP");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "LAMP", player);
+                                    if (!last_line.equals("LAMP")) {
+                                        set.put("chameleon_preset", "LAMP");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "LAMP", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Lamp Post");
                                     break;
                                 case 38:
                                     // Candy Cane
-                                    set.put("chameleon_preset", "CANDY");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "CANDY", player);
+                                    if (!last_line.equals("CANDY")) {
+                                        set.put("chameleon_preset", "CANDY");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "CANDY", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Candy Cane");
                                     break;
                                 case 40:
                                     // Toilet
-                                    set.put("chameleon_preset", "TOILET");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "TOILET", player);
+                                    if (!last_line.equals("TOILET")) {
+                                        set.put("chameleon_preset", "TOILET");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "TOILET", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Water Closet");
                                     break;
                                 case 42:
                                     // Robot
-                                    set.put("chameleon_preset", "ROBOT");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "ROBOT", player);
+                                    if (!last_line.equals("ROBOT")) {
+                                        set.put("chameleon_preset", "ROBOT");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "ROBOT", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Robot");
                                     break;
                                 case 44:
                                     // Flaming Torch
-                                    set.put("chameleon_preset", "TORCH");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "TORCH", player);
+                                    if (!last_line.equals("TORCH")) {
+                                        set.put("chameleon_preset", "TORCH");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "TORCH", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Flaming Torch");
                                     break;
                                 case 46:
                                     // Pine Tree
-                                    set.put("chameleon_preset", "PINE");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "PINE", player);
+                                    if (!last_line.equals("PINE")) {
+                                        set.put("chameleon_preset", "PINE");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "PINE", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Pine Tree");
                                     break;
                                 case 48:
                                     // Steam Punked
-                                    set.put("chameleon_preset", "PUNKED");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "PUNKED", player);
+                                    if (!last_line.equals("PUNKED")) {
+                                        set.put("chameleon_preset", "PUNKED");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "PUNKED", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Steam Punked");
                                     break;
                                 case 50:
                                     // Random Fence
-                                    set.put("chameleon_preset", "FENCE");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "FENCE", player);
+                                    if (!last_line.equals("FENCE")) {
+                                        set.put("chameleon_preset", "FENCE");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "FENCE", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Random Fence");
                                     break;
                                 case 52:
                                     // Nether Portal
-                                    set.put("chameleon_preset", "PORTAL");
-                                    TARDISStaticUtils.setSign(rs.getChameleon(), 3, "PORTAL", player);
+                                    if (!last_line.equals("PORTAL")) {
+                                        set.put("chameleon_preset", "PORTAL");
+                                        TARDISStaticUtils.setSign(tardis.getChameleon(), 3, "PORTAL", player);
+                                    }
                                     TARDISMessage.send(player, "CHAM_SET", ChatColor.AQUA + "Nether Portal");
                                     break;
                                 default:
@@ -265,6 +306,9 @@ public class TARDISPresetListener extends TARDISMenuListener implements Listener
                             if (set.size() > 0) {
                                 set.put("chameleon_demat", preset);
                                 qf.doUpdate("tardis", set, wherec);
+                            }
+                            if (set_oo.size() > 0) {
+                                qf.doUpdate("tardis", set_oo, wherec);
                             }
                         }
                     }

@@ -25,7 +25,7 @@ import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetControls;
 import me.eccentric_nz.TARDIS.database.ResultSetDiskStorage;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisPowered;
 import me.eccentric_nz.TARDIS.enumeration.DISK_CIRCUIT;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Material;
@@ -35,6 +35,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -58,6 +59,9 @@ public class TARDISConsoleListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onConsoleInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         final Player p = event.getPlayer();
         if (!p.hasPermission("tardis.advanced")) {
             return;
@@ -84,18 +88,18 @@ public class TARDISConsoleListener implements Listener {
                         key = plugin.getConfig().getString("preferences.key");
                     }
                     onlythese.add(Material.valueOf(key));
-                    ItemStack disk = event.getPlayer().getItemInHand();
+                    ItemStack disk = event.getPlayer().getInventory().getItemInMainHand();
                     if ((disk != null && onlythese.contains(disk.getType()) && disk.hasItemMeta()) || key.equals("AIR")) {
                         // only the time lord of this tardis
                         HashMap<String, Object> wheret = new HashMap<String, Object>();
                         wheret.put("tardis_id", id);
                         wheret.put("uuid", p.getUniqueId().toString());
-                        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
-                        if (!rs.resultSet()) {
+                        ResultSetTardisPowered rs = new ResultSetTardisPowered(plugin);
+                        if (!rs.fromBoth(id, p.getUniqueId().toString())) {
                             TARDISMessage.send(p, "NOT_OWNER");
                             return;
                         }
-                        if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+                        if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered()) {
                             TARDISMessage.send(p, "POWER_DOWN");
                             return;
                         }

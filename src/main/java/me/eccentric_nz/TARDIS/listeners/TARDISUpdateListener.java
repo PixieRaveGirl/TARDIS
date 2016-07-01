@@ -31,6 +31,7 @@ import me.eccentric_nz.TARDIS.database.ResultSetDoorBlocks;
 import me.eccentric_nz.TARDIS.database.ResultSetDoors;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.SCHEMATIC;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISStaticUtils;
@@ -46,6 +47,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 
 /**
  * The TARDIS interior goes through occasional metamorphoses, sometimes by
@@ -89,6 +91,8 @@ public class TARDISUpdateListener implements Listener {
         controls.put("toggle_wool", 20);
         controls.put("siege", 21);
         controls.put("control", 22);
+        controls.put("telepathic", 23);
+        controls.put("generator", 24);
         validBlocks.add(Material.LEVER);
         validBlocks.add(Material.REDSTONE_COMPARATOR_OFF);
         validBlocks.add(Material.REDSTONE_COMPARATOR_ON);
@@ -113,6 +117,9 @@ public class TARDISUpdateListener implements Listener {
     @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onUpdateInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         final Player player = event.getPlayer();
         final UUID uuid = player.getUniqueId();
         final String playerUUID = uuid.toString();
@@ -126,7 +133,7 @@ public class TARDISUpdateListener implements Listener {
         } else {
             return;
         }
-        Block block = event.getClickedBlock();
+        final Block block = event.getClickedBlock();
         if (block != null) {
             Material blockType = block.getType();
             Location block_loc = block.getLocation();
@@ -141,14 +148,15 @@ public class TARDISUpdateListener implements Listener {
             }
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", playerUUID);
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (!rs.resultSet()) {
                 TARDISMessage.send(player, "NO_TARDIS");
                 return;
             }
-            int id = rs.getTardis_id();
-            String preset = rs.getPreset().toString();
-            SCHEMATIC schm = rs.getSchematic();
+            Tardis tardis = rs.getTardis();
+            int id = tardis.getTardis_id();
+            String preset = tardis.getPreset().toString();
+            SCHEMATIC schm = tardis.getSchematic();
             QueryFactory qf = new QueryFactory(plugin);
             String table = "tardis";
             HashMap<String, Object> tid = new HashMap<String, Object>();
@@ -239,6 +247,43 @@ public class TARDISUpdateListener implements Listener {
             if (blockName.equalsIgnoreCase("scanner") && validBlocks.contains(blockType)) {
                 set.put("scanner", blockLocStr);
             }
+            if (blockName.equalsIgnoreCase("generator") && blockType.equals(Material.FLOWER_POT)) {
+                HashMap<String, Object> wherec = new HashMap<String, Object>();
+                wherec.put("tardis_id", id);
+                wherec.put("type", 24);
+                ResultSetControls rsc = new ResultSetControls(plugin, wherec, false);
+                if (!rsc.resultSet()) {
+                    qf.insertControl(id, 24, blockLocStr, 0);
+                    secondary = true;
+                } else {
+                    set.put("location", blockLocStr);
+                }
+            }
+            if (blockName.equalsIgnoreCase("telepathic") && (blockType.equals(Material.DAYLIGHT_DETECTOR) || blockType.equals(Material.DAYLIGHT_DETECTOR_INVERTED))) {
+                if (!plugin.getTrackerKeeper().getTelepathicPlacements().containsKey(uuid)) {
+                    TARDISMessage.send(player, "TELEPATHIC_PLACE");
+                    return;
+                }
+                plugin.getTrackerKeeper().getTelepathicPlacements().remove(uuid);
+                HashMap<String, Object> wheret = new HashMap<String, Object>();
+                wheret.put("tardis_id", id);
+                wheret.put("type", 23);
+                ResultSetControls rsc = new ResultSetControls(plugin, wheret, false);
+                if (!rsc.resultSet()) {
+                    qf.insertControl(id, 23, blockLocStr, 0);
+                    secondary = true;
+                } else if (secondary) {
+                    qf.insertControl(id, 23, blockLocStr, 1);
+                } else {
+                    set.put("location", blockLocStr);
+                }
+                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        block.setType(Material.DAYLIGHT_DETECTOR);
+                    }
+                }, 3L);
+            }
             if (blockName.equalsIgnoreCase("handbrake") && blockType == Material.LEVER) {
                 // check for existing handbrake - there may not be one, as custom schematic may not have CAKE block
                 HashMap<String, Object> whereh = new HashMap<String, Object>();
@@ -247,8 +292,8 @@ public class TARDISUpdateListener implements Listener {
                 ResultSetControls rsc = new ResultSetControls(plugin, whereh, false);
                 if (!rsc.resultSet()) {
                     qf.insertControl(id, 0, blockLocStr, 0);
-                }
-                if (secondary) {
+                    secondary = true;
+                } else if (secondary) {
                     qf.insertControl(id, 0, blockLocStr, 1);
                 } else {
                     set.put("location", blockLocStr);
@@ -460,7 +505,7 @@ public class TARDISUpdateListener implements Listener {
                             }
                         }
                         int control = schm.getSeedId();
-                        if (schm.getPermission().equals("deluxe") || schm.getPermission().equals("eleventh") || schm.getPermission().equals("master")) {
+                        if (schm.getPermission().equals("coral") || schm.getPermission().equals("deluxe") || schm.getPermission().equals("eleventh") || schm.getPermission().equals("master")) {
                             empty[0][4][4] = control;
                             empty[0][4][5] = control;
                             empty[0][5][4] = control;

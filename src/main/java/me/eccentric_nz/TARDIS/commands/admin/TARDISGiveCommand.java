@@ -23,11 +23,12 @@ import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.CONSOLES;
+import me.eccentric_nz.TARDIS.enumeration.INVENTORY_MANAGER;
 import me.eccentric_nz.TARDIS.enumeration.SCHEMATIC;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -49,12 +50,12 @@ public class TARDISGiveCommand implements CommandExecutor {
     private final TARDIS plugin;
     private final int full;
     private final HashMap<String, String> items = new HashMap<String, String>();
-    private final HashMap<String, Material> seeds = new HashMap<String, Material>();
 
     public TARDISGiveCommand(TARDIS plugin) {
         this.plugin = plugin;
         this.full = this.plugin.getArtronConfig().getInt("full_charge");
         items.put("a-circuit", "Server Admin Circuit");
+        items.put("acid-battery", "Acid Battery");
         items.put("ars-circuit", "TARDIS ARS Circuit");
         items.put("artron", "");
         items.put("bio-circuit", "Bio-scanner Circuit");
@@ -71,6 +72,7 @@ public class TARDISGiveCommand implements CommandExecutor {
         items.put("filter", "Perception Filter");
         items.put("fish-finger", "Fish Finger");
         items.put("furnace", "TARDIS Artron Furnace");
+        items.put("generator", "Sonic Generator");
         items.put("glasses", "3-D Glasses");
         items.put("i-circuit", "TARDIS Input Circuit");
         items.put("ignite-circuit", "Ignite Circuit");
@@ -93,12 +95,17 @@ public class TARDISGiveCommand implements CommandExecutor {
         items.put("r-key", "TARDIS Remote Key");
         items.put("randomiser-circuit", "TARDIS Randomiser Circuit");
         items.put("remote", "Stattenheim Remote");
+        items.put("reader", "TARDIS Biome Reader");
+        items.put("rift-circuit", "Rift Circuit");
+        items.put("rift-manipulator", "Rift Manipulator");
+        items.put("rust", "Rust Plague Sword");
         items.put("s-circuit", "TARDIS Stattenheim Circuit");
         items.put("save-disk", "Save Storage Disk");
         items.put("scanner-circuit", "TARDIS Scanner Circuit");
         items.put("seed", "");
         items.put("sonic", "Sonic Screwdriver");
         items.put("t-circuit", "TARDIS Temporal Circuit");
+        items.put("telepathic", "TARDIS Telepathic Circuit");
         items.put("tachyon", "");
         items.put("vortex", "Vortex Manipulator");
         items.put("watch", "Fob Watch");
@@ -219,6 +226,10 @@ public class TARDISGiveCommand implements CommandExecutor {
             im.setLore(lore);
             result.setItemMeta(im);
         }
+        if ((item.equals("save-disk") || item.equals("preset-disk") || item.equals("biome-disk") || item.equals("player-disk") || item.equals("blaster")) && !plugin.getInvManager().equals(INVENTORY_MANAGER.MULTIVERSE)) {
+            ItemMeta im = result.getItemMeta();
+            im.addItemFlags(ItemFlag.values());
+        }
         result.setAmount(amount);
         player.getInventory().addItem(result);
         player.updateInventory();
@@ -246,17 +257,18 @@ public class TARDISGiveCommand implements CommandExecutor {
     private boolean giveArtron(CommandSender sender, String player, int amount) {
         // Look up this player's UUID
         UUID uuid = plugin.getServer().getOfflinePlayer(player).getUniqueId();
-        if (uuid == null) {
-            uuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(player);
-            plugin.getGeneralKeeper().getUUIDCache().getId(player);
-        }
+//        if (uuid == null) {
+//            uuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(player);
+//            plugin.getGeneralKeeper().getUUIDCache().getId(player);
+//        }
         if (uuid != null) {
             HashMap<String, Object> where = new HashMap<String, Object>();
             where.put("uuid", uuid.toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
             if (rs.resultSet()) {
-                int id = rs.getTardis_id();
-                int level = rs.getArtron_level();
+                Tardis tardis = rs.getTardis();
+                int id = tardis.getTardis_id();
+                int level = tardis.getArtron_level();
                 int set_level;
                 if (amount == 0) {
                     set_level = 0;
@@ -295,8 +307,8 @@ public class TARDISGiveCommand implements CommandExecutor {
         }
         Player player = plugin.getServer().getPlayer(p);
         ItemStack is;
-        if (CONSOLES.getByNames().containsKey(type)) {
-            SCHEMATIC schm = CONSOLES.getByNames().get(type);
+        if (CONSOLES.getBY_NAMES().containsKey(type)) {
+            SCHEMATIC schm = CONSOLES.getBY_NAMES().get(type);
             is = new ItemStack(schm.getSeedMaterial(), 1);
             // set display name
             ItemMeta im = is.getItemMeta();
@@ -328,10 +340,10 @@ public class TARDISGiveCommand implements CommandExecutor {
         }
         // Look up this player's UUID
         UUID uuid = plugin.getServer().getOfflinePlayer(player).getUniqueId();
-        if (uuid == null) {
-            uuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(player);
-            plugin.getGeneralKeeper().getUUIDCache().getId(player);
-        }
+//        if (uuid == null) {
+//            uuid = plugin.getGeneralKeeper().getUUIDCache().getIdOptimistic(player);
+//            plugin.getGeneralKeeper().getUUIDCache().getId(player);
+//        }
         if (uuid != null) {
             plugin.getServer().dispatchCommand(sender, "vmg " + uuid.toString() + " " + amount);
             return true;
@@ -357,7 +369,7 @@ public class TARDISGiveCommand implements CommandExecutor {
         lore.set(1, "" + max);
         im.setLore(lore);
         im.addEnchant(Enchantment.DURABILITY, 1, true);
-        if (!plugin.getPM().isPluginEnabled("Multiverse-Inventories")) {
+        if (!plugin.getInvManager().equals(INVENTORY_MANAGER.MULTIVERSE)) {
             im.addItemFlags(ItemFlag.values());
         }
         result.setItemMeta(im);

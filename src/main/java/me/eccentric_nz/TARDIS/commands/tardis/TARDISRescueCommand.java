@@ -16,10 +16,9 @@
  */
 package me.eccentric_nz.TARDIS.commands.tardis;
 
-import java.util.HashMap;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisPowered;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -42,35 +41,36 @@ public class TARDISRescueCommand {
             return true;
         }
         if (player.hasPermission("tardis.timetravel.player")) {
-            HashMap<String, Object> where = new HashMap<String, Object>();
-            where.put("uuid", player.getUniqueId().toString());
-            ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-            if (!rs.resultSet()) {
+            ResultSetTardisPowered rs = new ResultSetTardisPowered(plugin);
+            if (!rs.fromUUID(player.getUniqueId().toString())) {
                 TARDISMessage.send(player, "NOT_A_TIMELORD");
                 return true;
             }
-            if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+            if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered()) {
                 TARDISMessage.send(player, "POWER_DOWN");
                 return true;
             }
             final String saved = args[1];
-            Player destPlayer = plugin.getServer().getPlayer(saved);
-            if (destPlayer == null) {
-                TARDISMessage.send(player, "NOT_ONLINE");
-                return true;
-            }
-            final UUID savedUUID = destPlayer.getUniqueId();
-            TARDISMessage.send(destPlayer, "RESCUE_REQUEST", player.getName(), ChatColor.AQUA + "tardis rescue accept" + ChatColor.RESET);
-            plugin.getTrackerKeeper().getChat().put(savedUUID, player.getUniqueId());
-            plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                @Override
-                public void run() {
-                    if (plugin.getTrackerKeeper().getChat().containsKey(savedUUID)) {
-                        plugin.getTrackerKeeper().getChat().remove(savedUUID);
-                        TARDISMessage.send(player, "RESCUE_NO_RESPONSE", saved);
-                    }
+            if (!saved.equalsIgnoreCase("accept")) {
+                Player destPlayer = plugin.getServer().getPlayer(saved);
+                if (destPlayer == null) {
+                    TARDISMessage.send(player, "NOT_ONLINE");
+                    return true;
                 }
-            }, 1200L);
+                final UUID savedUUID = destPlayer.getUniqueId();
+                String who = (plugin.getTrackerKeeper().getTelepathicRescue().containsKey(savedUUID)) ? plugin.getServer().getPlayer(plugin.getTrackerKeeper().getTelepathicRescue().get(savedUUID)).getName() : player.getName();
+                TARDISMessage.send(destPlayer, "RESCUE_REQUEST", who, ChatColor.AQUA + "tardis rescue accept" + ChatColor.RESET);
+                plugin.getTrackerKeeper().getChat().put(savedUUID, player.getUniqueId());
+                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        if (plugin.getTrackerKeeper().getChat().containsKey(savedUUID)) {
+                            plugin.getTrackerKeeper().getChat().remove(savedUUID);
+                            TARDISMessage.send(player, "RESCUE_NO_RESPONSE", saved);
+                        }
+                    }
+                }, 1200L);
+            }
         } else {
             TARDISMessage.send(player, "NO_PERM_PLAYER");
             return true;

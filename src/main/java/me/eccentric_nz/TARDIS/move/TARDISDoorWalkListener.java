@@ -16,19 +16,24 @@
  */
 package me.eccentric_nz.TARDIS.move;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.builders.TARDISEmergencyRelocation;
+import me.eccentric_nz.TARDIS.control.TARDISPowerButton;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCompanions;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetDoors;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
+import me.eccentric_nz.TARDIS.flight.TARDISTakeoff;
 import me.eccentric_nz.TARDIS.mobfarming.TARDISFarmer;
 import me.eccentric_nz.TARDIS.mobfarming.TARDISMob;
 import me.eccentric_nz.TARDIS.travel.TARDISDoorLocation;
@@ -48,6 +53,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Door;
 
@@ -75,6 +81,9 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
     @SuppressWarnings("deprecation")
     @EventHandler(ignoreCancelled = true)
     public void onDoorInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         Block block = event.getClickedBlock();
         if (block != null) {
             Material blockType = block.getType();
@@ -108,6 +117,10 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                             TARDISMessage.send(player, "NOT_WHILE_MAT");
                             return;
                         }
+                        if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                            TARDISMessage.send(player, "LOST_IN_VORTEX");
+                            return;
+                        }
                         QueryFactory qf = new QueryFactory(plugin);
                         COMPASS dd = rsd.getDoor_direction();
                         int doortype = rsd.getDoor_type();
@@ -126,7 +139,7 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                                 end_doortype = 0;
                                 break;
                         }
-                        ItemStack stack = player.getItemInHand();
+                        ItemStack stack = player.getInventory().getItemInMainHand();
                         Material material = stack.getType();
                         // get key material
                         HashMap<String, Object> wherepp = new HashMap<String, Object>();
@@ -135,10 +148,20 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                         String key;
                         boolean hasPrefs = false;
                         boolean willFarm = false;
+                        boolean canPowerUp = false;
                         if (rsp.resultSet()) {
                             hasPrefs = true;
                             key = (!rsp.getKey().isEmpty()) ? rsp.getKey() : plugin.getConfig().getString("preferences.key");
                             willFarm = rsp.isFarmOn();
+                            if (rsp.isAutoPowerUp() && plugin.getConfig().getBoolean("allow.power_down")) {
+                                // check TARDIS is not abandoned
+                                HashMap<String, Object> tid = new HashMap<String, Object>();
+                                tid.put("tardis_id", id);
+                                ResultSetTardis rs = new ResultSetTardis(plugin, tid, "", false, 2);
+                                if (rs.resultSet()) {
+                                    canPowerUp = !rs.getTardis().isAbandoned();
+                                }
+                            }
                         } else {
                             key = plugin.getConfig().getString("preferences.key");
                         }
@@ -146,10 +169,8 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                         Material m = Material.getMaterial(key);
                         if (action == Action.LEFT_CLICK_BLOCK) {
                             // must be the owner
-                            HashMap<String, Object> oid = new HashMap<String, Object>();
-                            oid.put("uuid", player.getUniqueId().toString());
-                            ResultSetTardis rs = new ResultSetTardis(plugin, oid, "", false);
-                            if (rs.resultSet()) {
+                            ResultSetTardisID rs = new ResultSetTardisID(plugin);
+                            if (rs.fromUUID(player.getUniqueId().toString())) {
                                 if (rs.getTardis_id() != id) {
                                     TARDISMessage.send(player, "DOOR_LOCK_UNLOCK");
                                     return;
@@ -180,9 +201,9 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                             // handbrake must be on
                             HashMap<String, Object> tid = new HashMap<String, Object>();
                             tid.put("tardis_id", id);
-                            ResultSetTardis rs = new ResultSetTardis(plugin, tid, "", false);
+                            ResultSetTardis rs = new ResultSetTardis(plugin, tid, "", false, 2);
                             if (rs.resultSet()) {
-                                if (!rs.isHandbrake_on()) {
+                                if (!rs.getTardis().isHandbrake_on()) {
                                     TARDISMessage.send(player, "HANDBRAKE_ENGAGE");
                                     return;
                                 }
@@ -203,54 +224,72 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                                                     }
                                                     return;
                                                 }
+                                                if (open && rs.getTardis().isAbandoned()) {
+                                                    TARDISMessage.send(player, "ABANDONED_DOOR");
+                                                    return;
+                                                }
+                                                if (plugin.getTrackerKeeper().getHasClickedHandbrake().contains(id) && doortype == 1) {
+                                                    plugin.getTrackerKeeper().getHasClickedHandbrake().removeAll(Collections.singleton(id));
+                                                    // toggle handbrake && dematerialise
+                                                    new TARDISTakeoff(plugin).run(id, player, rs.getTardis().getBeacon());
+                                                }
                                                 // toggle the door
                                                 new TARDISDoorToggler(plugin, block, player, minecart, open, id).toggleDoors();
                                             }
                                         } else if (blockType.equals(Material.TRAP_DOOR)) {
-                                            int open = 1;
                                             byte door_data = block.getData();
-                                            switch (dd) {
-                                                case NORTH:
-                                                    if (door_data == 1) {
-                                                        block.setData((byte) 5, false);
-                                                    } else {
-                                                        block.setData((byte) 1, false);
-                                                        open = 2;
-                                                    }
+                                            switch (door_data) {
+                                                case 0:
+                                                    block.setData((byte) 4, false);
                                                     break;
-                                                case WEST:
-                                                    if (door_data == 3) {
-                                                        block.setData((byte) 7, false);
-                                                    } else {
-                                                        block.setData((byte) 3, false);
-                                                        open = 2;
-                                                    }
+                                                case 1:
+                                                    block.setData((byte) 5, false);
                                                     break;
-                                                case SOUTH:
-                                                    if (door_data == 0) {
-                                                        block.setData((byte) 4, false);
-                                                    } else {
-                                                        block.setData((byte) 0, false);
-                                                        open = 2;
-                                                    }
+                                                case 2:
+                                                    block.setData((byte) 6, false);
                                                     break;
-                                                default:
-                                                    if (door_data == 2) {
-                                                        block.setData((byte) 6, false);
-                                                    } else {
-                                                        block.setData((byte) 2, false);
-                                                        open = 2;
-                                                    }
+                                                case 4:
+                                                    block.setData((byte) 0, false);
+                                                    break;
+                                                case 5:
+                                                    block.setData((byte) 1, false);
+                                                    break;
+                                                case 6:
+                                                    block.setData((byte) 2, false);
+                                                    break;
+                                                case 7:
+                                                    block.setData((byte) 3, false);
+                                                    break;
+                                                case 8:
+                                                    block.setData((byte) 12, false);
+                                                    break;
+                                                case 9:
+                                                    block.setData((byte) 13, false);
+                                                    break;
+                                                case 10:
+                                                    block.setData((byte) 14, false);
+                                                    break;
+                                                case 11:
+                                                    block.setData((byte) 15, false);
+                                                    break;
+                                                case 12:
+                                                    block.setData((byte) 8, false);
+                                                    break;
+                                                case 13:
+                                                    block.setData((byte) 9, false);
+                                                    break;
+                                                case 14:
+                                                    block.setData((byte) 10, false);
+                                                    break;
+                                                default: // 15
+                                                    block.setData((byte) 11, false);
                                                     break;
                                             }
-                                            playDoorSound(player, open, player.getLocation(), minecart);
                                         }
+                                    } else if (rs.getTardis().getUuid() != playerUUID) {
+                                        TARDISMessage.send(player, "DOOR_DEADLOCKED");
                                     } else {
-                                        if (rs.getUuid() != playerUUID) {
-                                            TARDISMessage.send(player, "DOOR_DEADLOCKED");
-                                        } else {
-                                            TARDISMessage.send(player, "DOOR_UNLOCK");
-                                        }
+                                        TARDISMessage.send(player, "DOOR_UNLOCK");
                                     }
                                 }
                             }
@@ -270,18 +309,20 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                             }
                             HashMap<String, Object> tid = new HashMap<String, Object>();
                             tid.put("tardis_id", id);
-                            ResultSetTardis rs = new ResultSetTardis(plugin, tid, "", false);
+                            ResultSetTardis rs = new ResultSetTardis(plugin, tid, "", false, 2);
                             if (rs.resultSet()) {
-                                int artron = rs.getArtron_level();
+                                final Tardis tardis = rs.getTardis();
+                                final int artron = tardis.getArtron_level();
                                 int required = plugin.getArtronConfig().getInt("backdoor");
-                                UUID tlUUID = rs.getUuid();
-                                PRESET preset = rs.getPreset();
+                                UUID tlUUID = tardis.getUuid();
+                                PRESET preset = tardis.getPreset();
                                 float yaw = player.getLocation().getYaw();
                                 float pitch = player.getLocation().getPitch();
-                                String companions = rs.getCompanions();
-                                boolean hb = rs.isHandbrake_on();
+                                String companions = tardis.getCompanions();
+                                boolean hb = tardis.isHandbrake_on();
+                                boolean po = !tardis.isPowered_on() && !tardis.isAbandoned();
                                 HashMap<String, Object> wherecl = new HashMap<String, Object>();
-                                wherecl.put("tardis_id", rs.getTardis_id());
+                                wherecl.put("tardis_id", tardis.getTardis_id());
                                 ResultSetCurrentLocation rsc = new ResultSetCurrentLocation(plugin, wherecl);
                                 if (!rsc.resultSet()) {
                                     // emergency TARDIS relocation
@@ -290,14 +331,11 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                                 }
                                 COMPASS d_backup = rsc.getDirection();
                                 // get quotes player prefs
-                                boolean userQuotes;
-                                boolean userTP;
+                                boolean userQuotes = true;
+                                boolean userTP = false;
                                 if (hasPrefs) {
                                     userQuotes = rsp.isQuotesOn();
                                     userTP = rsp.isTextureOn();
-                                } else {
-                                    userQuotes = true;
-                                    userTP = false;
                                 }
                                 // get players direction
                                 COMPASS pd = COMPASS.valueOf(TARDISStaticUtils.getPlayersDirection(player, false));
@@ -422,7 +460,7 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                                             }
                                             // if WorldGuard is on the server check for TARDIS region protection and add admin as member
                                             if (plugin.isWorldGuardOnServer() && plugin.getConfig().getBoolean("preferences.use_worldguard") && player.hasPermission("tardis.skeletonkey")) {
-                                                plugin.getWorldGuardUtils().addMemberToRegion(cw, rs.getOwner(), player.getName());
+                                                plugin.getWorldGuardUtils().addMemberToRegion(cw, tardis.getOwner(), player.getName());
                                             }
                                             // enter TARDIS!
                                             cw.getChunkAt(tmp_loc).load();
@@ -441,6 +479,15 @@ public class TARDISDoorWalkListener extends TARDISDoorListener implements Listen
                                                 if (!rsp.getTextureIn().isEmpty()) {
                                                     new TARDISResourcePackChanger(plugin).changeRP(player, rsp.getTextureIn());
                                                 }
+                                            }
+                                            if (canPowerUp && po) {
+                                                // power up the TARDIS
+                                                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        new TARDISPowerButton(plugin, id, player, tardis.getPreset(), false, tardis.isHidden(), tardis.isLights_on(), player.getLocation(), artron, tardis.getSchematic().hasLanterns()).clickButton();
+                                                    }
+                                                }, 20L);
                                             }
                                             // put player into travellers table
                                             // remove them first as they may have exited incorrectly and we only want them listed once

@@ -16,6 +16,8 @@
  */
 package me.eccentric_nz.TARDIS.commands.admin;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -30,7 +32,7 @@ import org.bukkit.command.CommandSender;
 public class TARDISSetBooleanCommand {
 
     private final TARDIS plugin;
-    private final List<String> require_restart = Arrays.asList("use_block_stack", "use_worldguard", "wg_flag_set", "walk_in_tardis", "zero_room");
+    private final List<String> require_restart = Arrays.asList("use_block_stack", "use_worldguard", "wg_flag_set", "walk_in_tardis", "zero_room", "open_door_policy", "particles", "switch_resource_packs");
 
     public TARDISSetBooleanCommand(TARDIS plugin) {
         this.plugin = plugin;
@@ -45,8 +47,29 @@ public class TARDISSetBooleanCommand {
             TARDISMessage.send(sender, "TRUE_FALSE");
             return false;
         }
-        plugin.getConfig().set(first, Boolean.valueOf(tf));
-        plugin.saveConfig();
+        if (first.equals("switch_resource_packs")) {
+            plugin.getPlanetsConfig().set("switch_resource_packs", tf);
+            try {
+                plugin.getPlanetsConfig().save(new File(plugin.getDataFolder(), "planets.yml"));
+            } catch (IOException ex) {
+                plugin.debug("Could not save planets.yml, " + ex.getMessage());
+            }
+        }
+        if (first.equals("artron_furnace.particles")) {
+            plugin.getArtronConfig().set(first, Boolean.valueOf(tf));
+            try {
+                plugin.getArtronConfig().save(new File(plugin.getDataFolder(), "artron.yml"));
+            } catch (IOException ex) {
+                plugin.debug("Could not save artron.yml, " + ex.getMessage());
+            }
+        } else {
+            if (first.equals("abandon")) {
+                plugin.getConfig().set(section, Boolean.valueOf(tf));
+            } else {
+                plugin.getConfig().set(first, Boolean.valueOf(tf));
+            }
+            plugin.saveConfig();
+        }
         TARDISMessage.send(sender, "CONFIG_UPDATED");
         if (require_restart.contains(tolower)) {
             TARDISMessage.send(sender, "RESTART");

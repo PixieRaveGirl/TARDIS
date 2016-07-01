@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (C) 2014 eccentric_nz
  *
  * This program is free software: you can redistribute it and/or modify
@@ -72,6 +72,11 @@ public class TARDISRoomRunnable implements Runnable {
     List<Block> iceblocks = new ArrayList<Block>();
     List<Block> lampblocks = new ArrayList<Block>();
     List<Block> caneblocks = new ArrayList<Block>();
+    List<Block> melonblocks = new ArrayList<Block>();
+    List<Block> potatoblocks = new ArrayList<Block>();
+    List<Block> carrotblocks = new ArrayList<Block>();
+    List<Block> pumpkinblocks = new ArrayList<Block>();
+    List<Block> wheatblocks = new ArrayList<Block>();
     List<Material> notThese = new ArrayList<Material>();
     HashMap<Block, Byte> cocoablocks = new HashMap<Block, Byte>();
     HashMap<Block, Byte> doorblocks = new HashMap<Block, Byte>();
@@ -109,9 +114,14 @@ public class TARDISRoomRunnable implements Runnable {
         this.repeaterOrder.put(3, 2);
         this.repeaterOrder.put(4, 5);
         this.repeaterOrder.put(5, 4);
+        this.notThese.add(Material.CARROT);
         this.notThese.add(Material.COCOA);
+        this.notThese.add(Material.CROPS);
         this.notThese.add(Material.LEVER);
+        this.notThese.add(Material.MELON_STEM);
         this.notThese.add(Material.PISTON_EXTENSION);
+        this.notThese.add(Material.POTATO);
+        this.notThese.add(Material.PUMPKIN_STEM);
         this.notThese.add(Material.REDSTONE_TORCH_ON);
         this.notThese.add(Material.SUGAR_CANE_BLOCK);
         this.notThese.add(Material.TORCH);
@@ -142,7 +152,7 @@ public class TARDISRoomRunnable implements Runnable {
             resetz = startz;
             world = l.getWorld();
             running = true;
-            grammar = (TARDISConstants.vowels.contains(room.substring(0, 1))) ? "an " + room : "a " + room;
+            grammar = (TARDISConstants.VOWELS.contains(room.substring(0, 1))) ? "an " + room : "a " + room;
             if (room.equals("GRAVITY") || room.equals("ANTIGRAVITY")) {
                 grammar += " WELL";
             }
@@ -166,7 +176,7 @@ public class TARDISRoomRunnable implements Runnable {
                 }
                 mushroomblocks.clear();
             }
-            if (room.equals("GREENHOUSE")) {
+            if (room.equals("ARBORETUM") || room.equals("GREENHOUSE")) {
                 // plant the sugar cane
                 for (Block cane : caneblocks) {
                     cane.setType(Material.SUGAR_CANE_BLOCK);
@@ -178,6 +188,36 @@ public class TARDISRoomRunnable implements Runnable {
                     entry.getKey().setData(entry.getValue(), true);
                 }
                 cocoablocks.clear();
+                // plant the melon
+                for (Block melon : melonblocks) {
+                    melon.setType(Material.MELON_STEM);
+                }
+                melonblocks.clear();
+                // plant the pumpkin
+                for (Block pumpkin : pumpkinblocks) {
+                    pumpkin.setType(Material.PUMPKIN_STEM);
+                }
+                pumpkinblocks.clear();
+                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        // plant the wheat
+                        for (Block wheat : wheatblocks) {
+                            wheat.setType(Material.CROPS);
+                        }
+                        wheatblocks.clear();
+                        // plant the carrot
+                        for (Block carrot : carrotblocks) {
+                            carrot.setType(Material.CARROT);
+                        }
+                        carrotblocks.clear();
+                        // plant the potato
+                        for (Block potato : potatoblocks) {
+                            potato.setType(Material.POTATO);
+                        }
+                        potatoblocks.clear();
+                    }
+                }, 5L);
             }
             if (room.equals("VILLAGE")) {
                 // put doors on
@@ -216,7 +256,8 @@ public class TARDISRoomRunnable implements Runnable {
                 for (Chunk ch : chunkList) {
                     if (plugin.getConfig().getBoolean("creation.sky_biome")) {
                         // refesh the cunk so ctm textures show
-                        world.refreshChunk(ch.getX(), ch.getZ());
+                        //world.refreshChunk(ch.getX(), ch.getZ());
+                        plugin.getTardisHelper().refreshChunk(ch);
                     }
                     plugin.getGeneralKeeper().getRoomChunkList().remove(ch);
                 }
@@ -327,7 +368,7 @@ public class TARDISRoomRunnable implements Runnable {
                 qf.insertControl(tardis_id, 19, plate, 0);
             }
             // set stable
-            if (type.equals(Material.SOUL_SAND) && (room.equals("STABLE") || room.equals("VILLAGE") || room.equals("RENDERER") || room.equals("ZERO") || room.equals("HUTCH"))) {
+            if (type.equals(Material.SOUL_SAND) && (room.equals("STABLE") || room.equals("VILLAGE") || room.equals("RENDERER") || room.equals("ZERO") || room.equals("HUTCH") || room.equals("IGLOO"))) {
                 HashMap<String, Object> sets = new HashMap<String, Object>();
                 sets.put(room.toLowerCase(Locale.ENGLISH), world.getName() + ":" + startx + ":" + starty + ":" + startz);
                 HashMap<String, Object> wheres = new HashMap<String, Object>();
@@ -342,6 +383,10 @@ public class TARDISRoomRunnable implements Runnable {
                     case HUTCH:
                     case STABLE:
                         type = Material.GRASS;
+                        data = 0;
+                        break;
+                    case IGLOO:
+                        type = Material.PACKED_ICE;
                         data = 0;
                         break;
                     case ZERO:
@@ -396,7 +441,7 @@ public class TARDISRoomRunnable implements Runnable {
             if (type.equals(Material.SOIL) && data == 0) {
                 data = (byte) 4;
             }
-            if (room.equals("GREENHOUSE")) {
+            if (room.equals("ARBORETUM") || room.equals("GREENHOUSE")) {
                 // remember sugar cane
                 if (type.equals(Material.SUGAR_CANE_BLOCK)) {
                     Block cane = world.getBlockAt(startx, starty, startz);
@@ -406,6 +451,38 @@ public class TARDISRoomRunnable implements Runnable {
                 if (type.equals(Material.COCOA)) {
                     Block cocoa = world.getBlockAt(startx, starty, startz);
                     cocoablocks.put(cocoa, data);
+                }
+                // remember wheat
+                if (type.equals(Material.CROPS)) {
+                    Block crops = world.getBlockAt(startx, starty, startz);
+                    wheatblocks.add(crops);
+                }
+                // remember melon
+                if (type.equals(Material.MELON_STEM)) {
+                    Block melon = world.getBlockAt(startx, starty, startz);
+                    melonblocks.add(melon);
+                }
+                // remember pumpkin
+                if (type.equals(Material.PUMPKIN_STEM)) {
+                    Block pumpkin = world.getBlockAt(startx, starty, startz);
+                    pumpkinblocks.add(pumpkin);
+                }
+                // remember carrot
+                if (type.equals(Material.CARROT)) {
+                    Block carrot = world.getBlockAt(startx, starty, startz);
+                    carrotblocks.add(carrot);
+                }
+                // remember potato
+                if (type.equals(Material.POTATO)) {
+                    Block potato = world.getBlockAt(startx, starty, startz);
+                    potatoblocks.add(potato);
+                }
+                if (level == 4 && room.equals("GREENHOUSE")) {
+                    // set all the ice to water
+                    for (Block ice : iceblocks) {
+                        ice.setType(Material.STATIONARY_WATER);
+                    }
+                    iceblocks.clear();
                 }
             }
             if (room.equals("RAIL") && type.equals(Material.FENCE)) {
@@ -479,7 +556,7 @@ public class TARDISRoomRunnable implements Runnable {
             }
             // if we're setting the biome to sky, do it now
             if (plugin.getConfig().getBoolean("creation.sky_biome") && level == 0) {
-                world.setBiome(startx, startz, Biome.SKY);
+                world.setBiome(startx, startz, Biome.VOID);
             }
             if (!notThese.contains(type) && !(type.equals(Material.HUGE_MUSHROOM_2) && data == (byte) 15)) {
                 if (type.equals(Material.STATIONARY_WATER)) {
@@ -489,7 +566,7 @@ public class TARDISRoomRunnable implements Runnable {
                 }
             }
             // remember ice blocks
-            if (type.equals(Material.STATIONARY_WATER) || type.equals(Material.ICE)) {
+            if ((type.equals(Material.STATIONARY_WATER) || type.equals(Material.ICE)) && !room.equals("IGLOO")) {
                 Block icy = world.getBlockAt(startx, starty, startz);
                 iceblocks.add(icy);
             }

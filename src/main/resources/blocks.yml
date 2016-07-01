@@ -64,6 +64,7 @@ chameleon_blocks:
 - 88
 - 89
 - 91
+- 95
 - 98
 - 99
 - 100
@@ -79,11 +80,16 @@ chameleon_blocks:
 - 159
 - 161
 - 162
+- 165
+- 168
 - 170
 - 172
 - 173
 - 174
 - 179
+- 201
+- 202
+- 206
 lamp_blocks:
 - TORCH
 - REDSTONE_TORCH_ON
@@ -176,6 +182,7 @@ under_door_blocks:
 - 136
 - 161
 - 171
+- 208
 # Add MATERIAL names here for blocks that should have zero Artron value when condensed (remove [] first)
 no_artron_value: []
 #- STONE

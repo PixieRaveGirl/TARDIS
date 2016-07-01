@@ -33,6 +33,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -44,6 +45,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
@@ -66,7 +68,7 @@ public class TARDISCraftListener implements Listener {
 
     public TARDISCraftListener(TARDIS plugin) {
         this.plugin = plugin;
-        // DELUXE, ELEVENTH, TWELFTH, ARS & REDSTONE schematics supplied by Lord_Rahl and killeratnight at mcnovus.net
+        // DELUXE, ELEVENTH, TWELFTH, ARS & REDSTONE schematics designed by Lord_Rahl and killeratnight at mcnovus.net
         t.put(Material.BOOKSHELF, "PLANK"); // plank
         t.put(Material.COAL_BLOCK, "STEAMPUNK"); // steampunk
         t.put(Material.DIAMOND_BLOCK, "DELUXE"); // deluxe
@@ -74,12 +76,14 @@ public class TARDISCraftListener implements Listener {
         t.put(Material.GOLD_BLOCK, "BIGGER"); // bigger
         t.put(Material.IRON_BLOCK, "BUDGET"); // budget
         t.put(Material.LAPIS_BLOCK, "TOM"); // tom baker
+        t.put(Material.NETHER_BRICK, "MASTER"); // master schematic designed by shadowhawk14269 (while playing at pvpcraft.ca)
+        t.put(Material.NETHER_WART_BLOCK, "CORAL"); // coral schematic designed by vistaero
         t.put(Material.PRISMARINE, "TWELFTH"); // twelfth
+        t.put(Material.PURPUR_BLOCK, "ENDER"); // ender schematic designed by ToppanaFIN (player at thatsnotacreeper.com)
         t.put(Material.QUARTZ_BLOCK, "ARS"); // ARS
         t.put(Material.REDSTONE_BLOCK, "REDSTONE"); // redstone
+        t.put(Material.SANDSTONE_STAIRS, "PYRAMID"); // pyramid schematic designed by airomis (player at thatsnotacreeper.com)
         t.put(Material.STAINED_CLAY, "WAR"); // war doctor
-        t.put(Material.SANDSTONE_STAIRS, "PYRAMID"); // pyramid schematic supplied by airomis (player at thatsnotacreeper.com)
-        t.put(Material.NETHER_BRICK, "MASTER"); // master schematic supplied by macdja38 at pvpcraft.ca
         // custom seeds
         for (String console : plugin.getCustomConsolesConfig().getKeys(false)) {
             if (plugin.getCustomConsolesConfig().getBoolean(console + ".enabled")) {
@@ -117,7 +121,6 @@ public class TARDISCraftListener implements Listener {
         UUID uuid = p.getUniqueId();
         Inventory inv = event.getInventory();
         if (crafters.contains(uuid) && inv.getType().equals(InventoryType.WORKBENCH)) {
-            plugin.debug("inventory closed after crafting seed");
             // remove dropped items around workbench
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 @Override
@@ -274,7 +277,7 @@ public class TARDISCraftListener implements Listener {
     }
 
     private boolean checkPerms(Player p, Material m) {
-        SCHEMATIC schm = CONSOLES.getByMaterials().get(m.toString());
+        SCHEMATIC schm = CONSOLES.getBY_MATERIALS().get(m.toString());
         if (schm != null) {
             String perm = schm.getPermission();
             return (perm.equals("budget")) ? true : p.hasPermission("tardis." + perm);
@@ -284,11 +287,12 @@ public class TARDISCraftListener implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onCraftInvisibilityCircuit(PrepareItemCraftEvent event) {
+    public void onCraftTARDISItem(PrepareItemCraftEvent event) {
         Recipe recipe = event.getRecipe();
         ItemStack is = recipe.getResult();
         if (is.hasItemMeta() && is.getItemMeta().hasDisplayName()) {
             String dn = is.getItemMeta().getDisplayName();
+            CraftingInventory ci = event.getInventory();
             if (is.getType().equals(Material.MAP)) {
                 if (DISK_CIRCUIT.getCircuitNames().contains(dn)) {
                     // which circuit is it?
@@ -306,13 +310,41 @@ public class TARDISCraftListener implements Listener {
                     }
                     im.setLore(lore);
                     is.setItemMeta(im);
-                    event.getInventory().setResult(is);
+                    ci.setResult(is);
+                }
+            } else if (is.getType().equals(Material.NETHER_BRICK_ITEM) && dn.equals("Acid Battery")) {
+                for (int i = 2; i < 9; i += 2) {
+                    ItemStack water = ci.getItem(i);
+                    if (!water.hasItemMeta() || !water.getItemMeta().hasDisplayName() || !water.getItemMeta().getDisplayName().equals("Acid Bucket")) {
+                        ci.setResult(null);
+                        break;
+                    }
+                }
+            } else if (is.getType().equals(Material.BEACON) && dn.equals("Rift Manipulator")) {
+                for (int i = 2; i < 9; i += 2) {
+                    ItemStack acid = ci.getItem(i);
+                    if (!acid.hasItemMeta() || !acid.getItemMeta().hasDisplayName() || !acid.getItemMeta().getDisplayName().equals("Acid Battery")) {
+                        ci.setResult(null);
+                        break;
+                    }
+                }
+            } else if (is.getType().equals(Material.IRON_SWORD) && dn.equals("Rust Plague Sword")) {
+                // enchant the result
+                is.addEnchantment(Enchantment.DAMAGE_UNDEAD, 2);
+                ci.setResult(is);
+                List<Integer> slots = Arrays.asList(1, 3, 4, 6);
+                for (int i : slots) {
+                    ItemStack rust = ci.getItem(i);
+                    if (!rust.hasItemMeta() || !rust.getItemMeta().hasDisplayName() || !rust.getItemMeta().getDisplayName().equals("Rust Bucket")) {
+                        ci.setResult(null);
+                        break;
+                    }
                 }
             } else if (is.getType().equals(Material.LEATHER_HELMET) && dn.equals("3-D Glasses")) {
                 LeatherArmorMeta lam = (LeatherArmorMeta) is.getItemMeta();
                 lam.setColor(Color.WHITE);
                 is.setItemMeta(lam);
-                event.getInventory().setResult(is);
+                ci.setResult(is);
             }
         }
     }

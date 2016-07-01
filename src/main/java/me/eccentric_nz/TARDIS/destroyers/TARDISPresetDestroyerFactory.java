@@ -19,17 +19,17 @@ package me.eccentric_nz.TARDIS.destroyers;
 import java.util.Collections;
 import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
 import me.eccentric_nz.TARDIS.chameleon.TARDISChameleonCircuit;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetDoors;
-import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.junk.TARDISJunkDestroyer;
 import me.eccentric_nz.TARDIS.utility.TARDISBlockSetters;
 import me.eccentric_nz.TARDIS.utility.TARDISLocationGetters;
+import me.eccentric_nz.TARDIS.utility.TARDISSounds;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -52,56 +52,57 @@ public class TARDISPresetDestroyerFactory {
         this.plugin = plugin;
     }
 
-    public void destroyPreset(TARDISMaterialisationData pdd) {
+    public void destroyPreset(DestroyData dd) {
         HashMap<String, Object> where = new HashMap<String, Object>();
-        where.put("tardis_id", pdd.getTardisID());
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        where.put("tardis_id", dd.getTardisID());
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 2);
         if (rs.resultSet()) {
-            PRESET demat = rs.getDemat();
+            Tardis tardis = rs.getTardis();
+            PRESET demat = tardis.getDemat();
+            PRESET preset = tardis.getPreset();
             // load the chunk if unloaded
-            if (!pdd.getLocation().getWorld().isChunkLoaded(pdd.getLocation().getChunk())) {
-                pdd.getLocation().getWorld().loadChunk(pdd.getLocation().getChunk());
+            if (!dd.getLocation().getWorld().isChunkLoaded(dd.getLocation().getChunk())) {
+                dd.getLocation().getWorld().loadChunk(dd.getLocation().getChunk());
             }
-            if (pdd.isDematerialise() && !demat.equals(PRESET.INVISIBLE)) {
-                int cham_id = rs.getChameleon_id();
-                byte cham_data = rs.getChameleon_data();
-                if (pdd.isChameleon() && (demat.equals(PRESET.NEW) || demat.equals(PRESET.OLD) || demat.equals(PRESET.SUBMERGED))) {
+            if (!demat.equals(PRESET.INVISIBLE)) {
+                int cham_id = tardis.getChameleon_id();
+                byte cham_data = tardis.getChameleon_data();
+                if (dd.isChameleon() && (demat.equals(PRESET.NEW) || demat.equals(PRESET.OLD) || demat.equals(PRESET.SUBMERGED))) {
                     Block chameleonBlock;
                     // chameleon circuit is on - get block under TARDIS
-                    if (pdd.getLocation().getBlock().getType() == Material.SNOW) {
-                        chameleonBlock = pdd.getLocation().getBlock();
+                    if (dd.getLocation().getBlock().getType() == Material.SNOW) {
+                        chameleonBlock = dd.getLocation().getBlock();
                     } else {
-                        chameleonBlock = pdd.getLocation().getBlock().getRelative(BlockFace.DOWN);
+                        chameleonBlock = dd.getLocation().getBlock().getRelative(BlockFace.DOWN);
                     }
                     // determine cham_id
                     TARDISChameleonCircuit tcc = new TARDISChameleonCircuit(plugin);
-                    int[] b_data = tcc.getChameleonBlock(chameleonBlock, pdd.getPlayer(), false);
+                    int[] b_data = tcc.getChameleonBlock(chameleonBlock, dd.getPlayer(), false);
                     cham_id = b_data[0];
                     cham_data = (byte) b_data[1];
                 }
-                int lamp = plugin.getConfig().getInt("police_box.tardis_lamp");
-                HashMap<String, Object> wherepp = new HashMap<String, Object>();
-                String uuid = (demat.equals(PRESET.JUNK)) ? "00000000-aaaa-bbbb-cccc-000000000000" : pdd.getPlayer().getUniqueId().toString();
-                wherepp.put("uuid", uuid);
-                ResultSetPlayerPrefs rsp = new ResultSetPlayerPrefs(plugin, wherepp);
-                if (rsp.resultSet()) {
-                    lamp = rsp.getLamp();
-                }
                 int loops = 18;
-                if (pdd.isHide()) {
+                if (dd.isHide()) {
                     loops = 3;
+                    TARDISSounds.playTARDISSound(dd.getLocation(), "tardis_takeoff_fast");
+                    if (plugin.getUtils().inTARDISWorld(dd.getPlayer().getPlayer())) {
+                        TARDISSounds.playTARDISSound(dd.getPlayer().getPlayer().getLocation(), "tardis_takeoff_fast");
+                    }
+                } else if (preset.equals(PRESET.JUNK_MODE)) {
+                    loops = 25;
                 }
                 if (demat.equals(PRESET.JUNK)) {
-                    TARDISJunkDestroyer runnable = new TARDISJunkDestroyer(plugin, pdd);
+                    TARDISJunkDestroyer runnable = new TARDISJunkDestroyer(plugin, dd);
                     int taskID = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, runnable, 10L, 20L);
                     runnable.setTask(taskID);
                 } else {
-                    TARDISDematerialisationPreset runnable = new TARDISDematerialisationPreset(plugin, pdd, demat, lamp, cham_id, cham_data, loops);
+                    plugin.getTrackerKeeper().getDematerialising().add(dd.getTardisID());
+                    TARDISDematerialisationPreset runnable = new TARDISDematerialisationPreset(plugin, dd, demat, cham_id, cham_data, loops);
                     int taskID = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, runnable, 10L, 20L);
                     runnable.setTask(taskID);
                 }
             } else {
-                new TARDISDeinstaPreset(plugin).instaDestroyPreset(pdd, pdd.isHide(), demat);
+                new TARDISDeinstaPreset(plugin).instaDestroyPreset(dd, dd.isHide(), demat);
             }
         }
     }
@@ -124,6 +125,22 @@ public class TARDISPresetDestroyerFactory {
         World w = l.getWorld();
         int signx, signz, signy;
         switch (p) {
+            case JUNK_MODE:
+                switch (d) {
+                    case EAST:
+                        signx = 0;
+                        signz = 1;
+                        break;
+                    case WEST:
+                        signx = 0;
+                        signz = -1;
+                        break;
+                    default:
+                        signx = 1;
+                        signz = 0;
+                        break;
+                }
+                break;
             case GRAVESTONE:
                 signx = 0;
                 signz = 0;
@@ -236,6 +253,34 @@ public class TARDISPresetDestroyerFactory {
         }
     }
 
+    public void destroyHandbrake(Location l, COMPASS d) {
+        int lx;
+        int lz;
+        switch (d) {
+            case EAST:
+                lx = -1;
+                lz = 1;
+                break;
+            case SOUTH:
+                lx = -1;
+                lz = -1;
+                break;
+            case WEST:
+                lx = 1;
+                lz = -1;
+                break;
+            default:
+                lx = 1;
+                lz = 1;
+                break;
+        }
+        World w = l.getWorld();
+        int tx = l.getBlockX() + lx;
+        int ty = l.getBlockY() + 2;
+        int tz = l.getBlockZ() + lz;
+        TARDISBlockSetters.setBlock(w, tx, ty, tz, 0, (byte) 0);
+    }
+
     public void destroyLamp(Location l, PRESET p) {
         World w = l.getWorld();
         int tx = l.getBlockX();
@@ -307,6 +352,27 @@ public class TARDISPresetDestroyerFactory {
         }
         TARDISBlockSetters.setBlock(w, leftx, eyey, leftz, 0, (byte) 0);
         TARDISBlockSetters.setBlock(w, rightx, eyey, rightz, 0, (byte) 0);
+    }
+
+    public void destroyLampTrapdoors(Location l, COMPASS d) {
+        Block lamp = l.getBlock().getRelative(BlockFace.UP, 3).getRelative(getOppositeFace(d));
+        for (BlockFace f : plugin.getGeneralKeeper().getFaces()) {
+            lamp.getRelative(f).setType(Material.AIR);
+        }
+    }
+
+    private BlockFace getOppositeFace(COMPASS c) {
+        switch (c) {
+            case NORTH:
+                return BlockFace.SOUTH;
+            case WEST:
+                return BlockFace.EAST;
+            case SOUTH:
+                return BlockFace.NORTH;
+            default:
+                return BlockFace.WEST;
+
+        }
     }
 
     public void removeBlockProtection(int id, QueryFactory qf) {

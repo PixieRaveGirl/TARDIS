@@ -24,6 +24,10 @@ import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
+import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.HADS;
+import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -53,11 +57,6 @@ public class TARDISPrefsMenuInventory {
      */
     @SuppressWarnings("deprecation")
     private ItemStack[] getItemStack() {
-        // map
-        ItemStack tt = new ItemStack(Material.MAP, 1);
-        ItemMeta map = tt.getItemMeta();
-        map.setDisplayName("TARDIS Map");
-        tt.setItemMeta(map);
         // get player prefs
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("uuid", uuid.toString());
@@ -67,7 +66,7 @@ public class TARDISPrefsMenuInventory {
             // make a new record
             HashMap<String, Object> set = new HashMap<String, Object>();
             set.put("uuid", uuid.toString());
-            set.put("lamp", plugin.getConfig().getInt("police_box.tardis_lamp"));
+            set.put("lamp", plugin.getConfig().getString("police_box.tardis_lamp"));
             new QueryFactory(plugin).doInsert("player_prefs", set);
             // get the new record
             HashMap<String, Object> whereu = new HashMap<String, Object>();
@@ -123,6 +122,14 @@ public class TARDISPrefsMenuInventory {
         h_im.setLore(Arrays.asList(h_value));
         hads.setItemMeta(h_im);
         options.add(hads);
+        // hads
+        ItemStack hads_type = new ItemStack(Material.DIODE, 1);
+        ItemMeta ht_im = hads_type.getItemMeta();
+        ht_im.setDisplayName("HADS Type");
+        String ht_value = (rsp.getHadsType().equals(HADS.DISPLACEMENT)) ? "DISPLACEMENT" : "DISPERSAL";
+        ht_im.setLore(Arrays.asList(ht_value));
+        hads_type.setItemMeta(ht_im);
+        options.add(hads_type);
         // minecart
         ItemStack mine = new ItemStack(Material.DIODE, 1);
         ItemMeta m_im = mine.getItemMeta();
@@ -204,15 +211,21 @@ public class TARDISPrefsMenuInventory {
         pre.setItemMeta(sign);
         options.add(pre);
         // travel bar
-        if (plugin.isBarAPIOnServer()) {
-            ItemStack bar = new ItemStack(Material.DIODE, 1);
-            ItemMeta api = bar.getItemMeta();
-            api.setDisplayName("Travel Bar");
-            String bar_value = (rsp.isTravelbarOn()) ? plugin.getLanguage().getString("SET_ON") : plugin.getLanguage().getString("SET_OFF");
-            api.setLore(Arrays.asList(bar_value));
-            bar.setItemMeta(api);
-            options.add(bar);
-        }
+        ItemStack bar = new ItemStack(Material.DIODE, 1);
+        ItemMeta api = bar.getItemMeta();
+        api.setDisplayName("Travel Bar");
+        String bar_value = (rsp.isTravelbarOn()) ? plugin.getLanguage().getString("SET_ON") : plugin.getLanguage().getString("SET_OFF");
+        api.setLore(Arrays.asList(bar_value));
+        bar.setItemMeta(api);
+        options.add(bar);
+        // police box textures (set biome)
+        ItemStack pb = new ItemStack(Material.DIODE, 1);
+        ItemMeta ure = pb.getItemMeta();
+        ure.setDisplayName("Police Box Textures");
+        String pbt_value = (rsp.isPoliceboxTexturesOn()) ? plugin.getLanguage().getString("SET_ON") : plugin.getLanguage().getString("SET_OFF");
+        ure.setLore(Arrays.asList(pbt_value));
+        pb.setItemMeta(ure);
+        options.add(pb);
         // mob farming
         if (plugin.getConfig().getBoolean("allow.mob_farming")) {
             ItemStack far = new ItemStack(Material.DIODE, 1);
@@ -223,15 +236,70 @@ public class TARDISPrefsMenuInventory {
             far.setItemMeta(ming);
             options.add(far);
         }
+        // telepathic circuit
+        ItemStack tele = new ItemStack(Material.DIODE, 1);
+        ItemMeta path = tele.getItemMeta();
+        path.setDisplayName("Telepathic Circuit");
+        String tele_value = (rsp.isPoliceboxTexturesOn()) ? plugin.getLanguage().getString("SET_ON") : plugin.getLanguage().getString("SET_OFF");
+        path.setLore(Arrays.asList(tele_value));
+        tele.setItemMeta(path);
+        options.add(tele);
+        // junk preset
+        ItemStack ju = new ItemStack(Material.DIODE, 1);
+        ItemMeta nk = ju.getItemMeta();
+        nk.setDisplayName("Junk TARDIS");
+        // get TARDIS preset
+        HashMap<String, Object> wherej = new HashMap<String, Object>();
+        wherej.put("uuid", uuid.toString());
+        ResultSetTardis rs = new ResultSetTardis(plugin, wherej, "", false, 0);
+        String junk_value = plugin.getLanguage().getString("SET_OFF");
+        String hb_value = plugin.getLanguage().getString("SET_ON");
+        if (rs.resultSet()) {
+            Tardis tardis = rs.getTardis();
+            junk_value = (tardis.getPreset().equals(PRESET.JUNK_MODE)) ? plugin.getLanguage().getString("SET_ON") : plugin.getLanguage().getString("SET_OFF");
+            hb_value = (tardis.isHandbrake_on()) ? plugin.getLanguage().getString("SET_ON") : plugin.getLanguage().getString("SET_OFF");
+        }
+        nk.setLore(Arrays.asList(junk_value));
+        ju.setItemMeta(nk);
+        options.add(ju);
+        // auto powerup
+        ItemStack power = new ItemStack(Material.DIODE, 1);
+        ItemMeta up = power.getItemMeta();
+        up.setDisplayName("Auto Power Up");
+        String pu_value = (rsp.isAutoPowerUp()) ? plugin.getLanguage().getString("SET_ON") : plugin.getLanguage().getString("SET_OFF");
+        up.setLore(Arrays.asList(pu_value));
+        power.setItemMeta(up);
+        options.add(power);
+        // add to stack
         ItemStack[] stack = new ItemStack[27];
-        for (int s = 0; s < 19; s++) {
+        for (int s = 0; s < 23; s++) {
             if (s < options.size()) {
                 stack[s] = options.get(s);
             } else {
                 stack[s] = null;
             }
         }
-        stack[22] = tt;
+        // interior hum sound
+        ItemStack hum = new ItemStack(Material.BOWL, 1);
+        ItemMeta hum_im = hum.getItemMeta();
+        hum_im.setDisplayName("Interior hum sound");
+        String hum_value = (rsp.getHum().isEmpty()) ? "random" : rsp.getHum();
+        hum_im.setLore(Arrays.asList(hum_value));
+        hum.setItemMeta(hum_im);
+        stack[23] = hum;
+        // handbrake
+        ItemStack hand = new ItemStack(Material.LEVER, 1);
+        ItemMeta brake = hand.getItemMeta();
+        brake.setDisplayName("Handbrake");
+        brake.setLore(Arrays.asList(hb_value));
+        hand.setItemMeta(brake);
+        stack[24] = hand;
+        // map
+        ItemStack tt = new ItemStack(Material.MAP, 1);
+        ItemMeta map = tt.getItemMeta();
+        map.setDisplayName("TARDIS Map");
+        tt.setItemMeta(map);
+        stack[25] = tt;
         if (plugin.getServer().getPlayer(uuid).hasPermission("tardis.admin")) {
             // admin
             ItemStack ad = new ItemStack(Material.NETHER_STAR, 1);

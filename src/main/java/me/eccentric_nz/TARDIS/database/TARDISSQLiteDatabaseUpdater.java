@@ -40,6 +40,7 @@ public class TARDISSQLiteDatabaseUpdater {
     private final List<String> destupdates = new ArrayList<String>();
     private final List<String> doorupdates = new ArrayList<String>();
     private final List<String> gravityupdates = new ArrayList<String>();
+    private final List<String> portalsupdates = new ArrayList<String>();
     private final List<String> prefsupdates = new ArrayList<String>();
     private final List<String> tardisupdates = new ArrayList<String>();
     private final List<String> inventoryupdates = new ArrayList<String>();
@@ -65,6 +66,7 @@ public class TARDISSQLiteDatabaseUpdater {
         doorupdates.add("locked INTEGER DEFAULT 0");
         gravityupdates.add("distance INTEGER DEFAULT 11");
         gravityupdates.add("velocity REAL DEFAULT 0.5");
+        portalsupdates.add("abandoned INTEGER DEFAULT 0");
         prefsupdates.add("artron_level INTEGER DEFAULT 0");
         prefsupdates.add("auto_on INTEGER DEFAULT 0");
         prefsupdates.add("auto_siege_on INTEGER DEFAULT 0");
@@ -79,40 +81,48 @@ public class TARDISSQLiteDatabaseUpdater {
         prefsupdates.add("floor TEXT DEFAULT 'LIGHT_GREY_WOOL'");
         prefsupdates.add("flying_mode INTEGER DEFAULT 1");
         prefsupdates.add("hads_on INTEGER DEFAULT 1");
+        prefsupdates.add("hads_type TEXT DEFAULT 'DISPLACEMENT'");
+        prefsupdates.add("hum TEXT DEFAULT ''");
         prefsupdates.add("key TEXT DEFAULT ''");
-        prefsupdates.add("lamp INTEGER");
         prefsupdates.add("language TEXT DEFAULT 'AUTO_DETECT'");
         prefsupdates.add("lanterns_on INTEGER DEFAULT 0");
         prefsupdates.add("minecart_on INTEGER DEFAULT 0");
+        prefsupdates.add("policebox_textures_on INTEGER DEFAULT 1");
         prefsupdates.add("renderer_on INTEGER DEFAULT 1");
         prefsupdates.add("siege_floor TEXT DEFAULT 'BLACK_CLAY'");
         prefsupdates.add("siege_wall TEXT DEFAULT 'GREY_CLAY'");
         prefsupdates.add("sign_on INTEGER DEFAULT 1");
         prefsupdates.add("submarine_on INTEGER DEFAULT 0");
+        prefsupdates.add("telepathy_on INTEGER DEFAULT 0");
         prefsupdates.add("texture_in TEXT DEFAULT ''");
         prefsupdates.add("texture_on INTEGER DEFAULT 0");
         prefsupdates.add("texture_out TEXT DEFAULT 'default'");
         prefsupdates.add("travelbar_on INTEGER DEFAULT 0");
         prefsupdates.add("wall TEXT DEFAULT 'ORANGE_WOOL'");
         prefsupdates.add("wool_lights_on INTEGER DEFAULT 0");
+        prefsupdates.add("auto_powerup_on INTEGER DEFAULT 0");
+        tardisupdates.add("abandoned INTEGER DEFAULT 0");
         tardisupdates.add("adapti_on INTEGER DEFAULT 0");
         tardisupdates.add("artron_level INTEGER DEFAULT 0");
         tardisupdates.add("beacon TEXT DEFAULT ''");
         tardisupdates.add("chameleon_data INTEGER DEFAULT 11");
+        tardisupdates.add("chameleon_demat TEXT DEFAULT 'NEW'");
         tardisupdates.add("chameleon_id INTEGER DEFAULT 35");
         tardisupdates.add("chameleon_preset TEXT DEFAULT 'NEW'");
-        tardisupdates.add("chameleon_demat TEXT DEFAULT 'NEW'");
         tardisupdates.add("condenser TEXT DEFAULT ''");
         tardisupdates.add("creeper TEXT DEFAULT ''");
         tardisupdates.add("eps TEXT DEFAULT ''");
         tardisupdates.add("farm TEXT DEFAULT ''");
         tardisupdates.add("handbrake_on INTEGER DEFAULT 1");
-        tardisupdates.add("hutch TEXT DEFAULT ''");
         tardisupdates.add("hidden INTEGER DEFAULT 0");
+        tardisupdates.add("hutch TEXT DEFAULT ''");
+        tardisupdates.add("igloo TEXT DEFAULT ''");
         tardisupdates.add("iso_on INTEGER DEFAULT 0");
+        tardisupdates.add("last_known_name TEXT COLLATE NOCASE DEFAULT ''");
         tardisupdates.add("lastuse INTEGER DEFAULT " + now);
-        tardisupdates.add("powered_on INTEGER DEFAULT 0");
         tardisupdates.add("lights_on INTEGER DEFAULT 1");
+        tardisupdates.add("monsters INTEGER DEFAULT 0");
+        tardisupdates.add("powered_on INTEGER DEFAULT 0");
         tardisupdates.add("rail TEXT DEFAULT ''");
         tardisupdates.add("recharging INTEGER DEFAULT 0");
         tardisupdates.add("renderer TEXT DEFAULT ''");
@@ -123,7 +133,6 @@ public class TARDISSQLiteDatabaseUpdater {
         tardisupdates.add("tips INTEGER DEFAULT '-1'");
         tardisupdates.add("village TEXT DEFAULT ''");
         tardisupdates.add("zero TEXT DEFAULT ''");
-        tardisupdates.add("last_known_name TEXT COLLATE NOCASE DEFAULT ''");
         inventoryupdates.add("attributes TEXT DEFAULT ''");
         inventoryupdates.add("armour_attributes TEXT DEFAULT ''");
     }
@@ -204,6 +213,17 @@ public class TARDISSQLiteDatabaseUpdater {
                     statement.executeUpdate(g_alter);
                 }
             }
+            for (String o : portalsupdates) {
+                String[] osplit = o.split(" ");
+                String ocheck = osplit[0] + " " + osplit[1].substring(0, 3);
+                String o_query = "SELECT sql FROM sqlite_master WHERE tbl_name = '" + prefix + "portals' AND sql LIKE '%" + ocheck + "%'";
+                ResultSet rso = statement.executeQuery(o_query);
+                if (!rso.next()) {
+                    i++;
+                    String o_alter = "ALTER TABLE " + prefix + "portals ADD " + o;
+                    statement.executeUpdate(o_alter);
+                }
+            }
             for (String p : prefsupdates) {
                 String[] psplit = p.split(" ");
                 String pcheck = psplit[0] + " " + psplit[1].substring(0, 3);
@@ -214,6 +234,23 @@ public class TARDISSQLiteDatabaseUpdater {
                     String p_alter = "ALTER TABLE " + prefix + "player_prefs ADD " + p;
                     statement.executeUpdate(p_alter);
                 }
+            }
+            String lamp_query1 = "SELECT sql FROM sqlite_master WHERE tbl_name = '" + prefix + "player_prefs' AND sql LIKE '%lamp TEXT%'";
+            boolean addlamp = false;
+            ResultSet lamp1 = statement.executeQuery(lamp_query1);
+            if (!lamp1.next()) {
+                addlamp = true;
+                // check again
+                String lamp_query2 = "SELECT sql FROM sqlite_master WHERE tbl_name = '" + prefix + "player_prefs' AND sql LIKE '%lamp INTEGER%'";
+                ResultSet lamp2 = statement.executeQuery(lamp_query2);
+                if (lamp2.next()) {
+                    addlamp = false;
+                }
+            }
+            if (addlamp) {
+                i++;
+                String lamp_alter = "ALTER TABLE " + prefix + "player_prefs ADD lamp TEXT DEFAULT ''";
+                statement.executeUpdate(lamp_alter);
             }
             for (String t : tardisupdates) {
                 String[] tsplit = t.split(" ");
@@ -242,6 +279,29 @@ public class TARDISSQLiteDatabaseUpdater {
                 i++;
                 String bio_alter = "ALTER TABLE " + prefix + "current ADD biome TEXT DEFAULT ''";
                 statement.executeUpdate(bio_alter);
+            }
+            // add tardis_id to dispersed
+            String dispersed_query = "SELECT sql FROM sqlite_master WHERE tbl_name = '" + prefix + "dispersed' AND sql LIKE '%tardis_id%'";
+            ResultSet rsdispersed = statement.executeQuery(dispersed_query);
+            if (!rsdispersed.next()) {
+                i++;
+                String dispersed_alter = "ALTER TABLE " + prefix + "dispersed ADD tardis_id INTEGER";
+                statement.executeUpdate(dispersed_alter);
+                // update tardis_id column for existing records
+                new TARDISDispersalUpdater(plugin).updateTardis_ids();
+            }
+            // transfer `void` data to `thevoid`, then remove `void` table
+            String voidQuery = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + prefix + "void'";
+            ResultSet rsvoid = statement.executeQuery(voidQuery);
+            if (rsvoid.next()) {
+                String getVoid = "SELECT * FROM '" + prefix + "void'";
+                ResultSet rsv = statement.executeQuery(getVoid);
+                while (rsv.next()) {
+                    String transfer = "INSERT OR IGNORE INTO " + prefix + "thevoid (tardis_id) VALUES (" + rsv.getInt("tardis_id") + ")";
+                    statement.executeUpdate(transfer);
+                }
+                String delVoid = "DROP TABLE '" + prefix + "void'";
+                statement.executeUpdate(delVoid);
             }
         } catch (SQLException e) {
             plugin.debug("SQLite database add fields error: " + e.getMessage() + e.getErrorCode());

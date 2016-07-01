@@ -20,10 +20,12 @@ import java.util.HashMap;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.advanced.TARDISCircuitChecker;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
@@ -60,22 +62,23 @@ public class TARDISMakeHerBlueCommand {
         plugin.getTrackerKeeper().getRebuildCooldown().put(uuid, System.currentTimeMillis());
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("uuid", uuid.toString());
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
         if (!rs.resultSet()) {
             TARDISMessage.send(player.getPlayer(), "NO_TARDIS");
             return true;
         }
-        if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+        Tardis tardis = rs.getTardis();
+        if (plugin.getConfig().getBoolean("allow.power_down") && !tardis.isPowered_on()) {
             TARDISMessage.send(player.getPlayer(), "POWER_DOWN");
             return true;
         }
-        if (!rs.getPreset().equals(PRESET.INVISIBLE)) {
+        if (!tardis.getPreset().equals(PRESET.INVISIBLE)) {
             TARDISMessage.send(player.getPlayer(), "INVISIBILITY_NOT");
             return true;
         }
-        int id = rs.getTardis_id();
+        int id = tardis.getTardis_id();
         TARDISCircuitChecker tcc = null;
-        if (plugin.getConfig().getString("preferences.difficulty").equals("hard")) {
+        if (!plugin.getDifficulty().equals(DIFFICULTY.EASY)) {
             tcc = new TARDISCircuitChecker(plugin, id);
             tcc.getCircuits();
         }
@@ -89,12 +92,16 @@ public class TARDISMakeHerBlueCommand {
                 return true;
             }
         }
+        if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+            TARDISMessage.send(player.getPlayer(), "NOT_IN_VORTEX");
+            return true;
+        }
         if (plugin.getTrackerKeeper().getInVortex().contains(id)) {
             TARDISMessage.send(player.getPlayer(), "NOT_WHILE_MAT");
             return true;
         }
         HashMap<String, Object> wherecl = new HashMap<String, Object>();
-        wherecl.put("tardis_id", rs.getTardis_id());
+        wherecl.put("tardis_id", tardis.getTardis_id());
         ResultSetCurrentLocation rsc = new ResultSetCurrentLocation(plugin, wherecl);
         if (!rsc.resultSet()) {
             TARDISMessage.send(player.getPlayer(), "CURRENT_NOT_FOUND");
@@ -103,7 +110,7 @@ public class TARDISMakeHerBlueCommand {
         }
         Location l = new Location(rsc.getWorld(), rsc.getX(), rsc.getY(), rsc.getZ());
         QueryFactory qf = new QueryFactory(plugin);
-        int level = rs.getArtron_level();
+        int level = tardis.getArtron_level();
         int rebuild = plugin.getArtronConfig().getInt("random");
         if (level < rebuild) {
             TARDISMessage.send(player.getPlayer(), "ENERGY_NO_REBUILD");
@@ -115,23 +122,23 @@ public class TARDISMakeHerBlueCommand {
         HashMap<String, Object> set = new HashMap<String, Object>();
         set.put("chameleon_preset", "NEW");
         qf.doUpdate("tardis", set, wherep);
-        final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-        pbd.setChameleon(false);
-        pbd.setDirection(rsc.getDirection());
-        pbd.setLocation(l);
-        pbd.setMalfunction(false);
-        pbd.setOutside(false);
-        pbd.setPlayer(player);
-        pbd.setRebuild(true);
-        pbd.setSubmarine(rsc.isSubmarine());
-        pbd.setTardisID(id);
-        pbd.setBiome(rsc.getBiome());
+        final BuildData bd = new BuildData(plugin, uuid.toString());
+        bd.setChameleon(false);
+        bd.setDirection(rsc.getDirection());
+        bd.setLocation(l);
+        bd.setMalfunction(false);
+        bd.setOutside(false);
+        bd.setPlayer(player);
+        bd.setRebuild(true);
+        bd.setSubmarine(rsc.isSubmarine());
+        bd.setTardisID(id);
+        bd.setBiome(rsc.getBiome());
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
             @Override
             public void run() {
-                plugin.getPresetBuilder().buildPreset(pbd);
+                plugin.getPresetBuilder().buildPreset(bd);
             }
-        }, 10L);
+        }, 20L);
         TARDISMessage.send(player.getPlayer(), "INVISIBILITY_REMOVED");
         HashMap<String, Object> wheret = new HashMap<String, Object>();
         wheret.put("tardis_id", id);

@@ -63,7 +63,7 @@ public class TARDISConfigConverter {
         sectionsBool.put("keep_night", "creation.keep_night");
         sectionsBool.put("land_on_water", "travel.land_on_water");
         sectionsBool.put("location_conversion_done", "conversions.location_conversion_done");
-        sectionsBool.put("materialise", "police_box.materialise");
+//        sectionsBool.put("materialise", "police_box.materialise");
         sectionsBool.put("name_tardis", "police_box.name_tardis");
         sectionsBool.put("nether", "travel.nether");
         sectionsBool.put("per_world_perms", "travel.per_world_perms");
@@ -92,12 +92,9 @@ public class TARDISConfigConverter {
         sectionsInt.put("malfunction", "preferences.malfunction");
         sectionsInt.put("malfunction_end", "preferences.malfunction_end");
         sectionsInt.put("malfunction_nether", "preferences.malfunction_nether");
-        sectionsInt.put("platform_data", "police_box.platform_data");
-        sectionsInt.put("platform_id", "police_box.platform_id");
         sectionsInt.put("random_attempts", "travel.random_attempts");
         sectionsInt.put("room_speed", "growth.room_speed");
         sectionsInt.put("rooms_condenser_percent", "growth.rooms_condenser_percent");
-        sectionsInt.put("tardis_lamp", "police_box.tardis_lamp");
         sectionsInt.put("terminal_step", "travel.terminal_step");
         sectionsInt.put("timeout", "travel.timeout");
         sectionsInt.put("timeout_height", "travel.timeout_height");
@@ -114,6 +111,7 @@ public class TARDISConfigConverter {
         sectionsString.put("mysql.password", "storage.mysql.password");
         sectionsString.put("mysql.url", "storage.mysql.url");
         sectionsString.put("mysql.user", "storage.mysql.user");
+        sectionsString.put("tardis_lamp", "police_box.tardis_lamp");
     }
 
     public boolean convert() {

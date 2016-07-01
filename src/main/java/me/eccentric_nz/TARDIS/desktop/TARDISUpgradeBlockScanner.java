@@ -11,7 +11,10 @@ import me.eccentric_nz.TARDIS.JSON.JSONObject;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.builders.TARDISInteriorPostioning;
 import me.eccentric_nz.TARDIS.builders.TARDISTIPSData;
+import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.rooms.TARDISWalls;
 import me.eccentric_nz.TARDIS.schematic.TARDISSchematicGZip;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -56,9 +59,10 @@ public class TARDISUpgradeBlockScanner {
         // calculate startx, starty, startz
         HashMap<String, Object> wheret = new HashMap<String, Object>();
         wheret.put("uuid", uuid.toString());
-        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false, 0);
         if (rs.resultSet()) {
-            int slot = rs.getTIPS();
+            Tardis tardis = rs.getTardis();
+            int slot = tardis.getTIPS();
             if (slot != -1) { // default world - use TIPS
                 TARDISInteriorPostioning tintpos = new TARDISInteriorPostioning(plugin);
                 TARDISTIPSData pos = tintpos.getTIPSData(slot);
@@ -67,20 +71,31 @@ public class TARDISUpgradeBlockScanner {
                 startz = pos.getCentreZ();
                 resetz = pos.getCentreZ();
             } else {
-                int gsl[] = plugin.getLocationUtils().getStartLocation(rs.getTardis_id());
+                int gsl[] = plugin.getLocationUtils().getStartLocation(tardis.getTardis_id());
                 startx = gsl[0];
                 resetx = gsl[1];
                 startz = gsl[2];
                 resetz = gsl[3];
             }
             starty = (tud.getPrevious().getPermission().equals("redstone")) ? 65 : 64;
-            String[] split = rs.getChunk().split(":");
+            String[] split = tardis.getChunk().split(":");
             World world = plugin.getServer().getWorld(split[0]);
-            // wall/floor block prefs
-            String wall_arr[] = tud.getWall().split(":");
-            Material wall_type = Material.valueOf(wall_arr[0]);
-            String floor_arr[] = tud.getFloor().split(":");
-            Material floor_type = Material.valueOf(floor_arr[0]);
+            Material wall_type;
+            Material floor_type;
+            // get wall/floor block prefs from database...
+            HashMap<String, Object> where = new HashMap<String, Object>();
+            where.put("uuid", uuid.toString());
+            ResultSetPlayerPrefs rsp = new ResultSetPlayerPrefs(plugin, where);
+            if (rsp.resultSet()) {
+                TARDISWalls.Pair wid_data = plugin.getTardisWalls().blocks.get(rsp.getWall());
+                wall_type = wid_data.getType();
+                TARDISWalls.Pair fid_data = plugin.getTardisWalls().blocks.get(rsp.getFloor());
+                floor_type = fid_data.getType();
+            } else {
+                wall_type = Material.WOOL;
+                floor_type = Material.WOOL;
+            }
+            String beacon = "";
             // get input array
             JSONArray arr = (JSONArray) obj.get("input");
             for (int level = 0; level < h; level++) {
@@ -114,10 +129,11 @@ public class TARDISUpgradeBlockScanner {
                             type = Material.DIODE_BLOCK_OFF;
                         }
                         if (type.equals(Material.MONSTER_EGGS)) {
-                            type = Material.WALL_SIGN;
+                            type = Material.AIR;
                         }
                         if (type.equals(Material.BEDROCK)) {
                             type = Material.GLASS;
+                            beacon = world.getName() + ":" + x + ":" + y + ":" + z;
                         }
                         if (type.equals(Material.COMMAND)) {
                             type = Material.SMOOTH_BRICK;
@@ -142,6 +158,7 @@ public class TARDISUpgradeBlockScanner {
             tbsd.setChanged(changed);
             // should return false if changed is higher than config
             tbsd.setAllow(changed < plugin.getConfig().getInt("desktop.block_change_percent"));
+            tbsd.setBeacon(beacon);
             return tbsd;
         } else {
             return null;

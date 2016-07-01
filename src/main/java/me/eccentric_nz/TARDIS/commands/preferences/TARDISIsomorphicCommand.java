@@ -20,6 +20,7 @@ import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.entity.Player;
 
@@ -38,12 +39,13 @@ public class TARDISIsomorphicCommand {
     public boolean toggleIsomorphicControls(Player player, String[] args, QueryFactory qf) {
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("uuid", player.getUniqueId().toString());
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 0);
         // does the player have a TARDIS
         if (rs.resultSet()) {
-            int iso = (rs.isIso_on()) ? 0 : 1;
-            String onoff = (rs.isIso_on()) ? "ISO_OFF" : "ISO_ON";
-            int id = rs.getTardis_id();
+            Tardis tardis = rs.getTardis();
+            int iso = (tardis.isIso_on()) ? 0 : 1;
+            String onoff = (tardis.isIso_on()) ? "ISO_OFF" : "ISO_ON";
+            int id = tardis.getTardis_id();
             HashMap<String, Object> seti = new HashMap<String, Object>();
             seti.put("iso_on", iso);
             HashMap<String, Object> wheret = new HashMap<String, Object>();

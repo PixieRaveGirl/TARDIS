@@ -18,9 +18,9 @@ package me.eccentric_nz.TARDIS.junk;
 
 import java.util.List;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
-import me.eccentric_nz.TARDIS.utility.TARDISEffectLibHelper;
+import me.eccentric_nz.TARDIS.utility.TARDISJunkParticles;
 import me.eccentric_nz.TARDIS.utility.TARDISSounds;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -61,31 +61,31 @@ public class TARDISJunkVortexRunnable implements Runnable {
             if (i == 1) {
                 fryTask = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new TARDISJunkItsDangerousRunnable(plugin, vortexJunkLoc), 0, 1L);
             }
-            if (plugin.getConfig().getBoolean("junk.particles") && plugin.isEffectLibOnServer()) {
-                TARDISEffectLibHelper.sendVortexParticles(effectsLoc);
-            }
-            if (i == 2) {
-                // play sound
-                for (Entity e : getJunkTravellers()) {
+            if (plugin.getConfig().getBoolean("junk.particles")) {
+                for (Entity e : plugin.getUtils().getJunkTravellers(vortexJunkLoc)) {
                     if (e instanceof Player) {
                         Player p = (Player) e;
-                        TARDISSounds.playTARDISSound(vortexJunkLoc, p, "junk_arc");
+                        TARDISJunkParticles.sendVortexParticles(effectsLoc, p);
                     }
                 }
             }
+            if (i == 2) {
+                // play sound
+                TARDISSounds.playTARDISSound(vortexJunkLoc, "junk_arc");
+            }
             if (i == loops - 1) {
                 // build the TARDIS at the location
-                final TARDISMaterialisationData tmd = new TARDISMaterialisationData();
-                tmd.setChameleon(false);
-                tmd.setDirection(COMPASS.SOUTH);
-                tmd.setLocation(destJunkLoc);
-                tmd.setMalfunction(false);
-                tmd.setOutside(true);
-                tmd.setPlayer(player);
-                tmd.setRebuild(false);
-                tmd.setSubmarine(false);
-                tmd.setTardisID(id);
-                plugin.getPresetBuilder().buildPreset(tmd);
+                final BuildData bd = new BuildData(plugin, "00000000-aaaa-bbbb-cccc-000000000000");
+                bd.setChameleon(false);
+                bd.setDirection(COMPASS.SOUTH);
+                bd.setLocation(destJunkLoc);
+                bd.setMalfunction(false);
+                bd.setOutside(true);
+                bd.setPlayer(player);
+                bd.setRebuild(false);
+                bd.setSubmarine(false);
+                bd.setTardisID(id);
+                plugin.getPresetBuilder().buildPreset(bd);
             }
             if (i == loops) {
                 // teleport players

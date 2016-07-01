@@ -25,6 +25,7 @@ import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetDestinations;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -33,6 +34,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 
 /**
  * Isomorphic controls could only be operated by one user. Such controls
@@ -70,6 +72,9 @@ public class TARDISBindListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
+        if (event.getHand() == null || event.getHand().equals(EquipmentSlot.OFF_HAND)) {
+            return;
+        }
         Block b = event.getClickedBlock();
         if (b != null) {
             Material m = b.getType();
@@ -94,23 +99,24 @@ public class TARDISBindListener implements Listener {
                         int id = rst.getTardis_id();
                         HashMap<String, Object> wheret = new HashMap<String, Object>();
                         wheret.put("tardis_id", id);
-                        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
+                        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false, 0);
                         if (rs.resultSet()) {
-                            UUID ownerUUID = rs.getUuid();
+                            Tardis tardis = rs.getTardis();
+                            UUID ownerUUID = tardis.getUuid();
                             HashMap<String, Object> whereb = new HashMap<String, Object>();
                             whereb.put("tardis_id", id);
                             whereb.put("bind", l);
                             ResultSetDestinations rsd = new ResultSetDestinations(plugin, whereb, false);
                             if (rsd.resultSet()) {
-                                if (plugin.getConfig().getBoolean("allow.power_down") && !rs.isPowered_on()) {
+                                if (plugin.getConfig().getBoolean("allow.power_down") && !tardis.isPowered_on()) {
                                     TARDISMessage.send(player, "POWER_DOWN");
                                     return;
                                 }
-                                if ((rs.isIso_on() && !player.getUniqueId().equals(ownerUUID) && !event.isCancelled()) || plugin.getTrackerKeeper().getJohnSmith().containsKey(player.getUniqueId())) {
+                                if ((tardis.isIso_on() && !player.getUniqueId().equals(ownerUUID) && !event.isCancelled()) || plugin.getTrackerKeeper().getJohnSmith().containsKey(player.getUniqueId())) {
                                     TARDISMessage.send(player, "ISO_HANDS_OFF");
                                     return;
                                 }
-                                if (!rs.isHandbrake_on()) {
+                                if (!tardis.isHandbrake_on() && !plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
                                     TARDISMessage.send(player, "NOT_WHILE_TRAVELLING");
                                     return;
                                 }
@@ -134,6 +140,10 @@ public class TARDISBindListener implements Listener {
                                         if (dest_name.equals("cave")) {
                                             player.performCommand("tardistravel cave");
                                             plugin.getConsole().sendMessage(player.getName() + " issued server command: /tardistravel cave");
+                                        }
+                                        if (dest_name.equals("make_her_blue")) {
+                                            player.performCommand("tardis make_her_blue");
+                                            plugin.getConsole().sendMessage(player.getName() + " issued server command: /tardis make_her_blue");
                                         }
                                         break;
                                     case 2: // player

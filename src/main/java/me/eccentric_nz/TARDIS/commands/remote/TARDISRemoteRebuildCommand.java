@@ -18,10 +18,10 @@ package me.eccentric_nz.TARDIS.commands.remote;
 
 import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisPreset;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import org.bukkit.Location;
@@ -49,28 +49,26 @@ public class TARDISRemoteRebuildCommand {
             return true;
         }
         Location l = new Location(rsc.getWorld(), rsc.getX(), rsc.getY(), rsc.getZ());
-        HashMap<String, Object> wheret = new HashMap<String, Object>();
-        wheret.put("tardis_id", id);
-        ResultSetTardis rs = new ResultSetTardis(plugin, wheret, "", false);
-        if (rs.resultSet() && rs.getPreset().equals(PRESET.INVISIBLE)) {
+        ResultSetTardisPreset rs = new ResultSetTardisPreset(plugin);
+        if (rs.fromID(id) && rs.getPreset().equals(PRESET.INVISIBLE)) {
             TARDISMessage.send(player.getPlayer(), "INVISIBILITY_ENGAGED");
             return true;
         }
-        final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-        pbd.setChameleon(cham);
-        pbd.setDirection(rsc.getDirection());
-        pbd.setLocation(l);
-        pbd.setMalfunction(false);
-        pbd.setOutside(false);
-        pbd.setPlayer(player);
-        pbd.setRebuild(true);
-        pbd.setSubmarine(rsc.isSubmarine());
-        pbd.setTardisID(id);
-        pbd.setBiome(rsc.getBiome());
+        final BuildData bd = new BuildData(plugin, player.getUniqueId().toString());
+        bd.setChameleon(cham);
+        bd.setDirection(rsc.getDirection());
+        bd.setLocation(l);
+        bd.setMalfunction(false);
+        bd.setOutside(false);
+        bd.setPlayer(player);
+        bd.setRebuild(true);
+        bd.setSubmarine(rsc.isSubmarine());
+        bd.setTardisID(id);
+        bd.setBiome(rsc.getBiome());
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
             @Override
             public void run() {
-                plugin.getPresetBuilder().buildPreset(pbd);
+                plugin.getPresetBuilder().buildPreset(bd);
             }
         }, 10L);
         TARDISMessage.send(sender, "TARDIS_REBUILT");

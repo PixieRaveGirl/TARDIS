@@ -17,6 +17,7 @@
 package me.eccentric_nz.TARDIS.utility;
 
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
@@ -299,6 +300,10 @@ public class TARDISStaticUtils {
         // get sign block so we can update it
         Location l = TARDISLocationGetters.getLocationFromDB(loc, 0, 0);
         if (l != null) {
+            Chunk chunk = l.getChunk();
+            while (!chunk.isLoaded()) {
+                chunk.load();
+            }
             Block cc = l.getBlock();
             if (cc.getType() == Material.WALL_SIGN || cc.getType() == Material.SIGN_POST) {
                 Sign sign = (Sign) cc.getState();
@@ -308,5 +313,25 @@ public class TARDISStaticUtils {
                 TARDISMessage.send(p, "CHAM", " " + text);
             }
         }
+    }
+
+    /**
+     * Gets the Chameleon Sign preset text.
+     *
+     * @param loc the location string retrieved from the database
+     * @return the last line of the sign
+     */
+    public static String getLastLine(String loc) {
+        // get sign block so we can read it
+        String str = "";
+        Location l = TARDISLocationGetters.getLocationFromDB(loc, 0, 0);
+        if (l != null) {
+            Block cc = l.getBlock();
+            if (cc.getType() == Material.WALL_SIGN || cc.getType() == Material.SIGN_POST) {
+                Sign sign = (Sign) cc.getState();
+                str = sign.getLine(3);
+            }
+        }
+        return str;
     }
 }

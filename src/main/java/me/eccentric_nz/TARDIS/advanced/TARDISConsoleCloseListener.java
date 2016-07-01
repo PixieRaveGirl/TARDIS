@@ -28,8 +28,11 @@ import me.eccentric_nz.TARDIS.database.ResultSetAreas;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.DISK_CIRCUIT;
 import me.eccentric_nz.TARDIS.enumeration.FLAG;
+import me.eccentric_nz.TARDIS.enumeration.TARDISOldBiomeLookup;
+import me.eccentric_nz.TARDIS.flight.TARDISLand;
 import me.eccentric_nz.TARDIS.travel.TARDISRandomiserCircuit;
 import me.eccentric_nz.TARDIS.travel.TARDISRescue;
 import me.eccentric_nz.TARDIS.travel.TARDISTimeTravel;
@@ -91,7 +94,7 @@ public class TARDISConsoleCloseListener implements Listener {
                 }
                 // remember what was placed in the console
                 saveCurrentConsole(inv, p.getUniqueId().toString());
-                if (plugin.getConfig().getString("preferences.difficulty").equals("hard")) {
+                if (!plugin.getDifficulty().equals(DIFFICULTY.EASY)) {
                     // check circuits
                     TARDISCircuitChecker tcc = new TARDISCircuitChecker(plugin, id);
                     tcc.getCircuits();
@@ -135,7 +138,7 @@ public class TARDISConsoleCloseListener implements Listener {
                                             // get a parking spot in this area
                                             HashMap<String, Object> wherea = new HashMap<String, Object>();
                                             wherea.put("area_name", first);
-                                            ResultSetAreas rsa = new ResultSetAreas(plugin, wherea, false);
+                                            ResultSetAreas rsa = new ResultSetAreas(plugin, wherea, false, false);
                                             if (!rsa.resultSet()) {
                                                 TARDISMessage.send(p, "AREA_NOT_FOUND", ChatColor.GREEN + "/tardis list areas" + ChatColor.RESET);
                                                 continue;
@@ -144,7 +147,7 @@ public class TARDISConsoleCloseListener implements Listener {
                                                 TARDISMessage.send(p, "TRAVEL_NO_AREA_PERM", first);
                                                 continue;
                                             }
-                                            Location l = plugin.getTardisArea().getNextSpot(rsa.getAreaName());
+                                            Location l = plugin.getTardisArea().getNextSpot(rsa.getArea().getAreaName());
                                             if (l == null) {
                                                 TARDISMessage.send(p, "NO_MORE_SPOTS");
                                                 continue;
@@ -166,42 +169,48 @@ public class TARDISConsoleCloseListener implements Listener {
                                             if (current.getBlock().getBiome().toString().equals(first)) {
                                                 continue;
                                             }
+                                            Biome biome;
                                             try {
-                                                Biome biome = Biome.valueOf(first);
-                                                TARDISMessage.send(p, "BIOME_SEARCH");
-                                                Location nsob = plugin.getGeneralKeeper().getTardisTravelCommand().searchBiome(p, id, biome, rsc.getWorld(), rsc.getX(), rsc.getZ());
-                                                if (nsob == null) {
-                                                    TARDISMessage.send(p, "BIOME_NOT_FOUND");
-                                                    continue;
-                                                } else {
-                                                    if (!plugin.getPluginRespect().getRespect(nsob, new Parameters(p, FLAG.getDefaultFlags()))) {
-                                                        continue;
-                                                    }
-                                                    World bw = nsob.getWorld();
-                                                    // check location
-                                                    while (!bw.getChunkAt(nsob).isLoaded()) {
-                                                        bw.getChunkAt(nsob).load();
-                                                    }
-                                                    int[] start_loc = TARDISTimeTravel.getStartLocation(nsob, rsc.getDirection());
-                                                    int tmp_y = nsob.getBlockY();
-                                                    for (int up = 0; up < 10; up++) {
-                                                        int count = TARDISTimeTravel.safeLocation(start_loc[0], tmp_y + up, start_loc[2], start_loc[1], start_loc[3], nsob.getWorld(), rsc.getDirection());
-                                                        if (count == 0) {
-                                                            nsob.setY(tmp_y + up);
-                                                            break;
-                                                        }
-                                                    }
-                                                    set_next.put("world", nsob.getWorld().getName());
-                                                    set_next.put("x", nsob.getBlockX());
-                                                    set_next.put("y", nsob.getBlockY());
-                                                    set_next.put("z", nsob.getBlockZ());
-                                                    set_next.put("direction", rsc.getDirection().toString());
-                                                    set_next.put("submarine", 0);
-                                                    TARDISMessage.send(p, "BIOME_SET", true);
-                                                }
+                                                biome = Biome.valueOf(first);
                                             } catch (IllegalArgumentException iae) {
-                                                TARDISMessage.send(p, "BIOME_NOT_VALID");
+                                                // may have a pre-1.9 biome disk do old biome lookup...
+                                                if (TARDISOldBiomeLookup.OLD_BIOME_LOOKUP.containsKey(first)) {
+                                                    biome = TARDISOldBiomeLookup.OLD_BIOME_LOOKUP.get(first);
+                                                } else {
+                                                    TARDISMessage.send(p, "BIOME_NOT_VALID");
+                                                    continue;
+                                                }
+                                            }
+                                            TARDISMessage.send(p, "BIOME_SEARCH");
+                                            Location nsob = plugin.getGeneralKeeper().getTardisTravelCommand().searchBiome(p, id, biome, rsc.getWorld(), rsc.getX(), rsc.getZ());
+                                            if (nsob == null) {
+                                                TARDISMessage.send(p, "BIOME_NOT_FOUND");
                                                 continue;
+                                            } else {
+                                                if (!plugin.getPluginRespect().getRespect(nsob, new Parameters(p, FLAG.getDefaultFlags()))) {
+                                                    continue;
+                                                }
+                                                World bw = nsob.getWorld();
+                                                // check location
+                                                while (!bw.getChunkAt(nsob).isLoaded()) {
+                                                    bw.getChunkAt(nsob).load();
+                                                }
+                                                int[] start_loc = TARDISTimeTravel.getStartLocation(nsob, rsc.getDirection());
+                                                int tmp_y = nsob.getBlockY();
+                                                for (int up = 0; up < 10; up++) {
+                                                    int count = TARDISTimeTravel.safeLocation(start_loc[0], tmp_y + up, start_loc[2], start_loc[1], start_loc[3], nsob.getWorld(), rsc.getDirection());
+                                                    if (count == 0) {
+                                                        nsob.setY(tmp_y + up);
+                                                        break;
+                                                    }
+                                                }
+                                                set_next.put("world", nsob.getWorld().getName());
+                                                set_next.put("x", nsob.getBlockX());
+                                                set_next.put("y", nsob.getBlockY());
+                                                set_next.put("z", nsob.getBlockZ());
+                                                set_next.put("direction", rsc.getDirection().toString());
+                                                set_next.put("submarine", 0);
+                                                TARDISMessage.send(p, "BIOME_SET", !plugin.getTrackerKeeper().getDestinationVortex().containsKey(id));
                                             }
                                             break;
                                         case RECORD_12: // player
@@ -257,7 +266,7 @@ public class TARDISConsoleCloseListener implements Listener {
                                                 boolean sub = Boolean.valueOf(lore.get(7));
                                                 set_next.put("submarine", (sub) ? 1 : 0);
                                                 set_tardis.put("chameleon_preset", lore.get(5));
-                                                TARDISMessage.send(p, "LOC_SET", true);
+                                                TARDISMessage.send(p, "LOC_SET", !plugin.getTrackerKeeper().getDestinationVortex().containsKey(id));
                                             } else {
                                                 TARDISMessage.send(p, "TRAVEL_NO_PERM_SAVE");
                                                 continue;
@@ -270,7 +279,7 @@ public class TARDISConsoleCloseListener implements Listener {
                                     if (set_next.size() > 0) {
                                         // update next
                                         where_next.put("tardis_id", id);
-                                        qf.doUpdate("next", set_next, where_next);
+                                        qf.doSyncUpdate("next", set_next, where_next);
                                         plugin.getTrackerKeeper().getHasDestination().put(id, plugin.getArtronConfig().getInt("travel"));
                                     }
                                     if (set_tardis.size() > 0) {
@@ -281,7 +290,11 @@ public class TARDISConsoleCloseListener implements Listener {
                                     if (plugin.getTrackerKeeper().getRescue().containsKey(id)) {
                                         plugin.getTrackerKeeper().getRescue().remove(id);
                                     }
-                                    if (plugin.getConfig().getBoolean("circuits.damage") && plugin.getConfig().getString("preferences.difficulty").equals("hard") && plugin.getConfig().getInt("circuits.uses.memory") > 0) {
+                                    if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                                        new TARDISLand(plugin, id, p).exitVortex();
+                                    }
+                                    if (plugin.getConfig().getBoolean("circuits.damage") && !plugin.getDifficulty().equals(DIFFICULTY.EASY) && plugin.getConfig().getInt("circuits.uses.memory") > 0 && !plugin.getTrackerKeeper().getHasNotClickedHandbrake().contains(id)) {
+                                        plugin.getTrackerKeeper().getHasNotClickedHandbrake().add(id);
                                         TARDISCircuitChecker tcc = new TARDISCircuitChecker(plugin, id);
                                         tcc.getCircuits();
                                         // decrement uses
@@ -309,11 +322,14 @@ public class TARDISConsoleCloseListener implements Listener {
                                     plugin.getTrackerKeeper().getSubmarine().remove(Integer.valueOf(id));
                                 }
                                 where_next.put("tardis_id", id);
-                                new QueryFactory(plugin).doUpdate("next", set_next, where_next);
+                                new QueryFactory(plugin).doSyncUpdate("next", set_next, where_next);
                                 plugin.getTrackerKeeper().getHasDestination().put(id, plugin.getArtronConfig().getInt("random_circuit"));
                                 plugin.getTrackerKeeper().getHasRandomised().add(id);
                                 TARDISMessage.send(p, "RANDOMISER");
-                                if (plugin.getConfig().getBoolean("circuits.damage") && plugin.getConfig().getString("preferences.difficulty").equals("hard") && plugin.getConfig().getInt("circuits.uses.randomiser") > 0) {
+                                if (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                                    new TARDISLand(plugin, id, p).exitVortex();
+                                }
+                                if (plugin.getConfig().getBoolean("circuits.damage") && !plugin.getDifficulty().equals(DIFFICULTY.EASY) && plugin.getConfig().getInt("circuits.uses.randomiser") > 0) {
                                     TARDISCircuitChecker tcc = new TARDISCircuitChecker(plugin, id);
                                     tcc.getCircuits();
                                     // decrement uses
@@ -338,6 +354,6 @@ public class TARDISConsoleCloseListener implements Listener {
         set.put("console", serialized);
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("uuid", uuid);
-        new QueryFactory(plugin).doUpdate("storage", set, where);
+        new QueryFactory(plugin).doSyncUpdate("storage", set, where);
     }
 }

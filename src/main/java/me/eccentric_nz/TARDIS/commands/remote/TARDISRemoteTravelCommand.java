@@ -18,11 +18,13 @@ package me.eccentric_nz.TARDIS.commands.remote;
 
 import java.util.HashMap;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetNextLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
+import me.eccentric_nz.TARDIS.destroyers.DestroyData;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
 import me.eccentric_nz.TARDIS.utility.TARDISSounds;
@@ -47,10 +49,11 @@ public class TARDISRemoteTravelCommand {
     public boolean doTravel(int id, OfflinePlayer player, CommandSender sender) {
         HashMap<String, Object> wherei = new HashMap<String, Object>();
         wherei.put("tardis_id", id);
-        ResultSetTardis rs = new ResultSetTardis(plugin, wherei, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, wherei, "", false, 2);
         if (rs.resultSet()) {
-            boolean cham = rs.isChamele_on();
-            boolean hidden = rs.isHidden();
+            Tardis tardis = rs.getTardis();
+            boolean cham = tardis.isChamele_on();
+            boolean hidden = tardis.isHidden();
             HashMap<String, Object> wherecl = new HashMap<String, Object>();
             wherecl.put("tardis_id", id);
             ResultSetCurrentLocation rscl = new ResultSetCurrentLocation(plugin, wherecl);
@@ -79,44 +82,48 @@ public class TARDISRemoteTravelCommand {
             if (!exit.getWorld().isChunkLoaded(exit.getChunk())) {
                 exit.getWorld().loadChunk(exit.getChunk());
             }
-            boolean mat = plugin.getConfig().getBoolean("police_box.materialise");
-            plugin.getTrackerKeeper().getInVortex().add(id);
-            final TARDISMaterialisationData pdd = new TARDISMaterialisationData();
-            pdd.setChameleon(cham);
-            pdd.setDirection(cd);
-            pdd.setLocation(l);
-            pdd.setDematerialise(mat);
-            pdd.setPlayer(player);
-            pdd.setHide(false);
-            pdd.setOutside(false);
-            pdd.setSubmarine(sub);
-            pdd.setTardisID(id);
-            pdd.setBiome(biome);
+//            boolean mat = plugin.getConfig().getBoolean("police_box.materialise");
             HashMap<String, Object> set = new HashMap<String, Object>();
-            if (!hidden && !plugin.getTrackerKeeper().getReset().contains(resetw)) {
-                plugin.getTrackerKeeper().getDematerialising().add(id);
-                plugin.getPresetDestroyer().destroyPreset(pdd);
-            } else {
-                // set hidden false!
-                set.put("hidden", 0);
-                plugin.getPresetDestroyer().removeBlockProtection(id, new QueryFactory(plugin));
+            if (!plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) {
+                plugin.getTrackerKeeper().getInVortex().add(id);
+                final DestroyData dd = new DestroyData(plugin, player.getUniqueId().toString());
+                dd.setChameleon(cham);
+                dd.setDirection(cd);
+                dd.setLocation(l);
+                dd.setPlayer(player);
+                dd.setHide(false);
+                dd.setOutside(false);
+                dd.setSubmarine(sub);
+                dd.setTardisID(id);
+                dd.setBiome(biome);
+                if (!hidden && !plugin.getTrackerKeeper().getReset().contains(resetw)) {
+                    plugin.getTrackerKeeper().getDematerialising().add(id);
+                    plugin.getPresetDestroyer().destroyPreset(dd);
+                } else {
+                    // set hidden false!
+                    set.put("hidden", 0);
+                    plugin.getPresetDestroyer().removeBlockProtection(id, new QueryFactory(plugin));
+                    // restore biome
+                    plugin.getUtils().restoreBiome(l, biome);
+                }
             }
-            long delay = (mat) ? 500L : 1L;
-            final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-            pbd.setChameleon(cham);
-            pbd.setDirection(sd);
-            pbd.setLocation(exit);
-            pbd.setMalfunction(false);
-            pbd.setOutside(false);
-            pbd.setPlayer(player);
-            pbd.setRebuild(false);
-            pbd.setSubmarine(is_next_sub);
-            pbd.setTardisID(id);
+//            long delay = (mat) ? 500L : 1L;
+            long delay = (plugin.getTrackerKeeper().getDestinationVortex().containsKey(id)) ? 1L : 500L;
+            final BuildData bd = new BuildData(plugin, player.getUniqueId().toString());
+            bd.setChameleon(cham);
+            bd.setDirection(sd);
+            bd.setLocation(exit);
+            bd.setMalfunction(false);
+            bd.setOutside(false);
+            bd.setPlayer(player);
+            bd.setRebuild(false);
+            bd.setSubmarine(is_next_sub);
+            bd.setTardisID(id);
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 @Override
                 public void run() {
-                    plugin.getPresetBuilder().buildPreset(pbd);
-                    TARDISSounds.playTARDISSoundNearby(pbd.getLocation(), "tardis_land");
+                    plugin.getPresetBuilder().buildPreset(bd);
+                    TARDISSounds.playTARDISSound(bd.getLocation(), "tardis_land");
                 }
             }, delay);
             if (plugin.getTrackerKeeper().getDamage().containsKey(id)) {

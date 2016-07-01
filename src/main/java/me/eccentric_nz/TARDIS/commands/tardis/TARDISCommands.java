@@ -16,14 +16,14 @@
  */
 package me.eccentric_nz.TARDIS.commands.tardis;
 
-import java.util.HashMap;
 import java.util.Locale;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.advanced.TARDISDiskWriterCommand;
 import me.eccentric_nz.TARDIS.arch.TARDISArchCommand;
 import me.eccentric_nz.TARDIS.chatGUI.TARDISUpdateChatGUI;
 import me.eccentric_nz.TARDIS.commands.TARDISCommandHelper;
-import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.ResultSetTardisID;
+import me.eccentric_nz.TARDIS.enumeration.DIFFICULTY;
 import me.eccentric_nz.TARDIS.enumeration.TARDIS_COMMAND;
 import me.eccentric_nz.TARDIS.noteblock.TARDISPlayThemeCommand;
 import me.eccentric_nz.TARDIS.utility.TARDISMessage;
@@ -82,10 +82,8 @@ public class TARDISCommands implements CommandExecutor {
                 TARDISMessage.send(sender, "CMD_PLAYER");
                 return false;
             } else {
-                HashMap<String, Object> where = new HashMap<String, Object>();
-                where.put("uuid", player.getUniqueId().toString());
-                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
-                if (!rs.resultSet()) {
+                ResultSetTardisID rs = new ResultSetTardisID(plugin);
+                if (!rs.fromUUID(player.getUniqueId().toString())) {
                     TARDISMessage.send(player, "NOT_A_TIMELORD");
                     return true;
                 }
@@ -93,8 +91,15 @@ public class TARDISCommands implements CommandExecutor {
                     TARDISMessage.send(player, "SIEGE_NO_CMD");
                     return true;
                 }
+                if (args[0].equalsIgnoreCase("abandon")) {
+                    return new TARDISAbandonCommand(plugin).doAbandon(sender, args.length > 1);
+                }
                 if (args[0].equalsIgnoreCase("add")) {
-                    return new TARDISAddCompanionCommand(plugin).doAdd(player, args);
+                    if (args.length == 1) {
+                        return new TARDISAddCompanionCommand(plugin).doAddGUI(player);
+                    } else {
+                        return new TARDISAddCompanionCommand(plugin).doAdd(player, args);
+                    }
                 }
                 if (args[0].equalsIgnoreCase("arch_time")) {
                     return new TARDISArchCommand(plugin).getTime(player);
@@ -182,7 +187,7 @@ public class TARDISCommands implements CommandExecutor {
                     return new TARDISRoomCommand(plugin).startRoom(player, args);
                 }
                 if (args[0].equalsIgnoreCase("save_player")) {
-                    ItemStack is = player.getItemInHand();
+                    ItemStack is = player.getInventory().getItemInMainHand();
                     if (heldDiskIsWrong(is, "Player Storage Disk")) {
                         TARDISMessage.send(player, "DISK_HAND_PLAYER");
                         return true;
@@ -212,9 +217,9 @@ public class TARDISCommands implements CommandExecutor {
                     return new TARDISExterminateCommand(plugin).doExterminate(player);
                 }
                 if (args[0].equalsIgnoreCase("save")) {
-                    ItemStack is = player.getItemInHand();
-                    if (plugin.getConfig().getString("preferences.difficulty").equals("hard") && !plugin.getUtils().inGracePeriod(player, true)) {
-                        if (heldDiskIsWrong(is, "Save Storage Disk")) {
+                    ItemStack is = player.getInventory().getItemInMainHand();
+                    if (!plugin.getDifficulty().equals(DIFFICULTY.EASY) && !plugin.getUtils().inGracePeriod(player, true)) {
+                        if (plugin.getDifficulty().equals(DIFFICULTY.HARD) && heldDiskIsWrong(is, "Save Storage Disk")) {
                             TARDISMessage.send(player, "DISK_HAND_SAVE");
                             return true;
                         }
@@ -233,18 +238,12 @@ public class TARDISCommands implements CommandExecutor {
         boolean complexBool = false;
         if (is == null) {
             complexBool = true;
-        } else {
-            if (!is.hasItemMeta()) {
-                complexBool = true;
-            } else {
-                if (!is.getItemMeta().hasDisplayName()) {
-                    complexBool = true;
-                } else {
-                    if (!is.getItemMeta().getDisplayName().equals(dn)) {
-                        complexBool = true;
-                    }
-                }
-            }
+        } else if (!is.hasItemMeta()) {
+            complexBool = true;
+        } else if (!is.getItemMeta().hasDisplayName()) {
+            complexBool = true;
+        } else if (!is.getItemMeta().getDisplayName().equals(dn)) {
+            complexBool = true;
         }
         return complexBool;
     }

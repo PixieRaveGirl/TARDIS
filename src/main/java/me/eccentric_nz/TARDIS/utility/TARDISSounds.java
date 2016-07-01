@@ -21,11 +21,9 @@ import java.util.List;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
-import me.eccentric_nz.TARDIS.database.ResultSetTravellers;
+import me.eccentric_nz.TARDIS.database.ResultSetSounds;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
 /**
@@ -39,15 +37,15 @@ import org.bukkit.entity.Player;
  */
 public class TARDISSounds {
 
-    private static final float volume = TARDIS.plugin.getConfig().getInt("preferences.sfx_volume") / 10.0F;
+    private static final float VOLUME = TARDIS.plugin.getConfig().getInt("preferences.sfx_volume") / 10.0F;
 
     /**
-     * Plays a random TARDIS sound to players who are inside the TARDIS and
+     * Plays an interior hum sound to players who are inside the TARDIS and
      * don't have SFX set to false.
      */
-    public static void randomTARDISSound() {
+    public static void playTARDISHum() {
         if (TARDIS.plugin.getConfig().getBoolean("allow.sfx") == true) {
-            ResultSetTravellers rs = new ResultSetTravellers(TARDIS.plugin, null, true);
+            ResultSetSounds rs = new ResultSetSounds(TARDIS.plugin);
             if (rs.resultSet()) {
                 List<UUID> data = rs.getData();
                 for (UUID u : data) {
@@ -55,15 +53,18 @@ public class TARDISSounds {
                     where.put("uuid", u.toString());
                     ResultSetPlayerPrefs rsp = new ResultSetPlayerPrefs(TARDIS.plugin, where);
                     boolean userSFX;
+                    String hum;
                     if (rsp.resultSet()) {
                         userSFX = rsp.isSfxOn();
+                        hum = (rsp.getHum().isEmpty()) ? "tardis_hum" : "tardis_hum_" + rsp.getHum();
                     } else {
                         userSFX = true;
+                        hum = "tardis_hum";
                     }
                     final Player player = Bukkit.getServer().getPlayer(u);
                     if (player != null) {
                         if (userSFX) {
-                            playTARDISSound(player.getLocation(), player, "tardis_hum");
+                            playTARDISSound(player.getLocation(), hum);
                         }
                     }
                 }
@@ -72,46 +73,63 @@ public class TARDISSounds {
     }
 
     /**
-     * Plays a TARDIS sound for the player and surrounding players at the
-     * current location.
+     * Plays the interior hum sound upon TARDIS entry.
      *
-     * @param l The location
-     * @param p The player who initiated the sound playing, i.e. released the
-     * handbrake
-     * @param s The sound to play
+     * @param p the player to play the sound to
      */
-    @SuppressWarnings("deprecation")
-    public static void playTARDISSound(Location l, Player p, String s) {
-        if (p != null) {
-            p.playSound(l, s, volume, 1.0F);
-            for (Entity e : p.getNearbyEntities(10.0d, 10.0d, 10.0d)) {
-                if (e instanceof Player && !((Player) e).equals(p)) {
-                    Player pp = (Player) e;
-                    pp.playSound(pp.getLocation(), s, volume, 1.0f);
-                }
-            }
+    public static void playTARDISHum(Player p) {
+        HashMap<String, Object> where = new HashMap<String, Object>();
+        where.put("uuid", p.getUniqueId().toString());
+        ResultSetPlayerPrefs rsp = new ResultSetPlayerPrefs(TARDIS.plugin, where);
+        boolean userSFX;
+        String hum;
+        if (rsp.resultSet()) {
+            userSFX = rsp.isSfxOn();
+            hum = (rsp.getHum().isEmpty()) ? "tardis_hum" : "tardis_hum_" + rsp.getHum();
+        } else {
+            userSFX = true;
+            hum = "tardis_hum";
+        }
+        if (userSFX) {
+            playTARDISSound(p.getLocation(), hum);
         }
     }
 
     /**
-     * Attempts to play a TARDIS sound at an external location. Generally the
-     * location is outside the TARDIS, so this will attempt to find rescued
-     * players and players nearby to the TARDIS as it re-materialises.
+     * Plays a TARDIS sound for the player and surrounding players at the
+     * current location.
      *
-     * @param l The location to play the sound
+     * @param l The location
+     * @param s The sound to play
+     * @param volume The volume to play the sound at
+     */
+    public static void playTARDISSound(Location l, String s, float volume) {
+        l.getWorld().playSound(l, s, VOLUME * volume, 1.0f);
+    }
+
+    /**
+     * Plays a TARDIS sound for the player and surrounding players at the
+     * current location.
+     *
+     * @param l The location
      * @param s The sound to play
      */
-    @SuppressWarnings("deprecation")
-    public static void playTARDISSoundNearby(Location l, String s) {
-        // spawn an entity at the location - an egg will do
-        Entity egg = l.getWorld().spawnEntity(l, EntityType.EGG);
-        for (Entity e : egg.getNearbyEntities(16.0d, 16.0d, 16.0d)) {
-            if (e instanceof Player) {
-                Player pp = (Player) e;
-                pp.playSound(pp.getLocation(), s, volume, 1.0f);
+    public static void playTARDISSound(Location l, String s) {
+        l.getWorld().playSound(l, s, VOLUME, 1.0f);
+    }
+
+    /**
+     * Plays a TARIS sound for the specified player.
+     *
+     * @param p The player
+     * @param s The sound to play
+     */
+    public static void playTARDISSound(final Player p, final String s) {
+        TARDIS.plugin.getServer().getScheduler().scheduleSyncDelayedTask(TARDIS.plugin, new Runnable() {
+            @Override
+            public void run() {
+                p.playSound(p.getLocation(), s, VOLUME, 1.0f);
             }
-        }
-        // remove entity
-        egg.remove();
+        }, 5L);
     }
 }

@@ -20,12 +20,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.builders.TARDISMaterialisationData;
+import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetPlayerPrefs;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.desktop.TARDISUpgradeData;
+import me.eccentric_nz.TARDIS.destroyers.DestroyData;
 import me.eccentric_nz.TARDIS.enumeration.SCHEMATIC;
 import me.eccentric_nz.TARDIS.rooms.TARDISWalls.Pair;
 import me.eccentric_nz.TARDIS.utility.TARDISLocationGetters;
@@ -60,11 +62,12 @@ public class TARDISSiegeMode {
         // get the current siege status
         HashMap<String, Object> where = new HashMap<String, Object>();
         where.put("tardis_id", id);
-        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+        ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 2);
         if (!rs.resultSet()) {
             return;
         }
-        boolean cham = (plugin.getConfig().getBoolean("travel.chameleon")) ? rs.isChamele_on() : false;
+        Tardis tardis = rs.getTardis();
+        boolean cham = (plugin.getConfig().getBoolean("travel.chameleon")) ? tardis.isChamele_on() : false;
         // get current location
         HashMap<String, Object> wherec = new HashMap<String, Object>();
         wherec.put("tardis_id", id);
@@ -77,31 +80,31 @@ public class TARDISSiegeMode {
         HashMap<String, Object> wheres = new HashMap<String, Object>();
         wheres.put("tardis_id", id);
         HashMap<String, Object> set = new HashMap<String, Object>();
-        if (rs.isSiege_on()) {
+        if (tardis.isSiege_on()) {
             // must have at least 10% power
             int min = (plugin.getArtronConfig().getInt("full_charge") / 100) * plugin.getArtronConfig().getInt("siege_transfer");
-            if (min > rs.getArtron_level()) {
+            if (min > tardis.getArtron_level()) {
                 TARDISMessage.send(p, "SIEGE_POWER");
                 return;
             }
             // remove siege block
             siege.setType(Material.AIR);
             // rebuild preset
-            final TARDISMaterialisationData pbd = new TARDISMaterialisationData();
-            pbd.setChameleon(cham);
-            pbd.setDirection(rsc.getDirection());
-            pbd.setLocation(current);
-            pbd.setMalfunction(false);
-            pbd.setOutside(false);
-            pbd.setPlayer(p);
-            pbd.setRebuild(true);
-            pbd.setSubmarine(rsc.isSubmarine());
-            pbd.setTardisID(id);
-            pbd.setBiome(rsc.getBiome());
+            final BuildData bd = new BuildData(plugin, p.getUniqueId().toString());
+            bd.setChameleon(cham);
+            bd.setDirection(rsc.getDirection());
+            bd.setLocation(current);
+            bd.setMalfunction(false);
+            bd.setOutside(false);
+            bd.setPlayer(p);
+            bd.setRebuild(true);
+            bd.setSubmarine(rsc.isSubmarine());
+            bd.setTardisID(id);
+            bd.setBiome(rsc.getBiome());
             plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
                 @Override
                 public void run() {
-                    plugin.getPresetBuilder().buildPreset(pbd);
+                    plugin.getPresetBuilder().buildPreset(bd);
                 }
             }, 10L);
             set.put("siege_on", 0);
@@ -110,7 +113,7 @@ public class TARDISSiegeMode {
                 plugin.getTrackerKeeper().getInSiegeMode().remove(Integer.valueOf(id));
             }
             if (plugin.getConfig().getInt("siege.breeding") > 0 || plugin.getConfig().getInt("siege.growth") > 0) {
-                String[] chu = rs.getChunk().split(":");
+                String[] chu = tardis.getChunk().split(":");
                 String w = chu[0];
                 if (plugin.getConfig().getInt("siege.breeding") > 0) {
                     List<TARDISSiegeArea> breeding = new ArrayList<TARDISSiegeArea>();
@@ -138,26 +141,24 @@ public class TARDISSiegeMode {
                         plugin.getTrackerKeeper().getSiegeGrowthAreas().remove(w);
                     }
                 }
-
             }
             if (plugin.getConfig().getBoolean("siege.texture")) {
-                changeTextures(rs.getUuid().toString(), rs.getSchematic(), p, false);
+                changeTextures(tardis.getUuid().toString(), tardis.getSchematic(), p, false);
             }
             TARDISMessage.send(p, "SIEGE_OFF");
         } else {
             // destroy tardis
-            final TARDISMaterialisationData pdd = new TARDISMaterialisationData();
-            pdd.setChameleon(false);
-            pdd.setDirection(rsc.getDirection());
-            pdd.setLocation(current);
-            pdd.setDematerialise(false);
-            pdd.setPlayer(p.getPlayer());
-            pdd.setHide(false);
-            pdd.setOutside(false);
-            pdd.setSubmarine(rsc.isSubmarine());
-            pdd.setTardisID(id);
-            pdd.setBiome(rsc.getBiome());
-            plugin.getPresetDestroyer().destroyPreset(pdd);
+            final DestroyData dd = new DestroyData(plugin, p.getUniqueId().toString());
+            dd.setChameleon(false);
+            dd.setDirection(rsc.getDirection());
+            dd.setLocation(current);
+            dd.setPlayer(p.getPlayer());
+            dd.setHide(false);
+            dd.setOutside(false);
+            dd.setSubmarine(rsc.isSubmarine());
+            dd.setTardisID(id);
+            dd.setBiome(rsc.getBiome());
+            plugin.getPresetDestroyer().destroyPreset(dd);
             // place siege block
             siege.setType(Material.HUGE_MUSHROOM_1);
             siege.setData((byte) 14, true);
@@ -166,14 +167,14 @@ public class TARDISSiegeMode {
             set.put("siege_on", 1);
             TARDISMessage.send(p, "SIEGE_ON");
             // butcher hostile mobs?
-            if (plugin.getConfig().getBoolean("seige.butcher")) {
+            if (plugin.getConfig().getBoolean("siege.butcher")) {
                 TARDISMessage.send(p, "SIEGE_BUTCHER");
                 for (Entity ent : p.getNearbyEntities(72d, 32d, 72d)) {
                     if (ent instanceof Monster) {
                         if (ent instanceof Creeper) {
-                            // check it is  not the Artron Capacitor Creeper
+                            // check it is not the Artron Capacitor Creeper
                             Location cl = ent.getLocation();
-                            Location dbl = TARDISLocationGetters.getLocationFromDB(rs.getCreeper(), 0.0f, 0.0f);
+                            Location dbl = TARDISLocationGetters.getLocationFromDB(tardis.getCreeper(), 0.0f, 0.0f);
                             if (cl.getBlockX() == dbl.getBlockX() && cl.getBlockY() == dbl.getBlockY() && cl.getBlockZ() == dbl.getBlockZ()) {
                                 continue;
                             }
@@ -203,14 +204,14 @@ public class TARDISSiegeMode {
                 }
             }
             if (plugin.getConfig().getBoolean("siege.texture")) {
-                changeTextures(rs.getUuid().toString(), rs.getSchematic(), p, true);
+                changeTextures(tardis.getUuid().toString(), tardis.getSchematic(), p, true);
             }
         }
         // update the database
         new QueryFactory(plugin).doUpdate("tardis", set, wheres);
     }
 
-    private void changeTextures(String uuid, SCHEMATIC schm, Player p, boolean toSiege) {
+    public void changeTextures(String uuid, SCHEMATIC schm, Player p, boolean toSiege) {
         HashMap<String, Object> wherepp = new HashMap<String, Object>();
         wherepp.put("uuid", uuid);
         ResultSetPlayerPrefs rspp = new ResultSetPlayerPrefs(plugin, wherepp);

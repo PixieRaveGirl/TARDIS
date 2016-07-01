@@ -25,6 +25,7 @@ import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetDoorBlocks;
 import me.eccentric_nz.TARDIS.database.ResultSetPortals;
 import me.eccentric_nz.TARDIS.database.ResultSetTardis;
+import me.eccentric_nz.TARDIS.database.data.Tardis;
 import me.eccentric_nz.TARDIS.enumeration.COMPASS;
 import me.eccentric_nz.TARDIS.enumeration.PRESET;
 import me.eccentric_nz.TARDIS.utility.TARDISLocationGetters;
@@ -104,14 +105,20 @@ public class TARDISDoorOpener {
                 uuids.add(uuid);
                 HashMap<String, Object> where = new HashMap<String, Object>();
                 where.put("tardis_id", id);
-                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false);
+                ResultSetTardis rs = new ResultSetTardis(plugin, where, "", false, 2);
+                Tardis tardis = null;
                 PRESET preset = null;
+                boolean abandoned = false;
                 if (rs.resultSet()) {
-                    preset = rs.getPreset();
-                    String[] companions = rs.getCompanions().split(":");
-                    for (String c : companions) {
-                        if (!c.isEmpty()) {
-                            uuids.add(UUID.fromString(c));
+                    tardis = rs.getTardis();
+                    preset = tardis.getPreset();
+                    abandoned = tardis.isAbandoned();
+                    if (!plugin.getConfig().getBoolean("preferences.open_door_policy")) {
+                        String[] companions = tardis.getCompanions().split(":");
+                        for (String c : companions) {
+                            if (!c.isEmpty()) {
+                                uuids.add(UUID.fromString(c));
+                            }
                         }
                     }
                 }
@@ -182,23 +189,27 @@ public class TARDISDoorOpener {
                     tp_in.setLocation(indoor);
                     tp_in.setTardisId(id);
                     tp_in.setDirection(indirection);
+                    tp_in.setAbandoned(abandoned);
                     TARDISTeleportLocation tp_out = new TARDISTeleportLocation();
                     tp_out.setLocation(exdoor);
                     tp_out.setTardisId(id);
                     tp_out.setDirection(exdirection);
-                    // players
-                    for (UUID u : uuids) {
-                        // only add them if they're not there already!
-                        if (!plugin.getTrackerKeeper().getMover().contains(u)) {
-                            plugin.getTrackerKeeper().getMover().add(u);
+                    tp_out.setAbandoned(abandoned);
+                    if (!plugin.getConfig().getBoolean("preferences.open_door_policy")) {
+                        // players
+                        for (UUID u : uuids) {
+                            // only add them if they're not there already!
+                            if (!plugin.getTrackerKeeper().getMover().contains(u)) {
+                                plugin.getTrackerKeeper().getMover().add(u);
+                            }
                         }
                     }
                     // locations
-                    if (preset != null && preset.hasPortal()) {
+                    if (tardis != null && preset != null && preset.hasPortal()) {
                         plugin.getTrackerKeeper().getPortals().put(exportal, tp_in);
                         if (preset.equals(PRESET.INVISIBLE) && plugin.getConfig().getBoolean("allow.3d_doors")) {
                             // remember door location
-                            plugin.getTrackerKeeper().getInvisibleDoors().put(rs.getUuid(), other);
+                            plugin.getTrackerKeeper().getInvisibleDoors().put(tardis.getUuid(), other);
                         }
                     }
                     plugin.getTrackerKeeper().getPortals().put(inportal, tp_out);

@@ -1,9 +1,9 @@
 package me.eccentric_nz.TARDIS.artron;
 
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.utility.TARDISEffectLibHelper;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.entity.Player;
@@ -23,11 +23,6 @@ public class TARDISArtronFurnaceParticle {
         plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, new Runnable() {
             @Override
             public void run() {
-                for (Block block : plugin.getGeneralKeeper().getArtronFurnaces()) {
-                    if (block != null && isArtronFurnace(block)) {
-                        TARDISEffectLibHelper.sendWaterParticle(block.getLocation());
-                    }
-                }
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     Location loc = player.getLocation();
                     loc.subtract(10.0d, 10.0d, 10.0d);
@@ -35,8 +30,8 @@ public class TARDISArtronFurnaceParticle {
                         for (double x = 0.0d; x < 20.0d; x += 1.0d) {
                             for (double z = 0.0d; z < 20.0d; z += 1.0d) {
                                 loc.add(x, y, z);
-                                if (isArtronFurnace(loc.getBlock()) && (!plugin.getGeneralKeeper().getArtronFurnaces().contains(loc.getBlock()))) {
-                                    plugin.getGeneralKeeper().getArtronFurnaces().add(loc.getBlock());
+                                if (isArtronFurnace(loc.getBlock())) {
+                                    player.spawnParticle(Particle.WATER_SPLASH, loc.getBlock().getLocation().add(0.5d, 1.0d, 0.5d), 10);
                                 }
                                 loc.subtract(x, y, z);
                             }
@@ -48,16 +43,20 @@ public class TARDISArtronFurnaceParticle {
     }
 
     private boolean isArtronFurnace(Block b) {
-        if (b == null || (!b.getType().equals(Material.BURNING_FURNACE) && !b.getType().equals(Material.FURNACE))) {
-            return false;
-        }
-        Furnace furnace = (Furnace) b.getState();
-        if (furnace != null) {
-            Inventory inv = furnace.getInventory();
-            if (inv != null) {
-                String title = furnace.getInventory().getTitle();
-                return (title != null && title.equals("TARDIS Artron Furnace"));
+        try {
+            if (b == null || (!b.getType().equals(Material.BURNING_FURNACE) && !b.getType().equals(Material.FURNACE))) {
+                return false;
             }
+            Furnace furnace = (Furnace) b.getState();
+            if (furnace != null) {
+                Inventory inv = furnace.getInventory();
+                if (inv != null) {
+                    String title = inv.getTitle();
+                    return (title != null && title.equals("TARDIS Artron Furnace"));
+                }
+            }
+        } catch (NullPointerException e) {
+            return false;
         }
         return false;
     }

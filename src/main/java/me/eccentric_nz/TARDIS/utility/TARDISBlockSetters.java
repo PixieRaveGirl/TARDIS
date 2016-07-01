@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -49,6 +50,33 @@ public class TARDISBlockSetters {
     @SuppressWarnings("deprecation")
     public static void setBlock(World w, int x, int y, int z, int m, byte d) {
         final Block b = w.getBlockAt(x, y, z);
+        if (m < 0) {
+            m += 256;
+        }
+        if (m == 92) { //cake -> handbrake
+            m = 69;
+            d = (byte) 5;
+        }
+        if (m == 52) { //mob spawner -> scanner button
+            m = 143;
+            d = (byte) 3;
+        }
+        if (b != null) {
+            b.setTypeId(m);
+            b.setData(d, true);
+        }
+    }
+
+    /**
+     * Sets a block to the specified typeId and data.
+     *
+     * @param l the location of the block.
+     * @param m the typeId to set the block to.
+     * @param d the data bit to set the block to.
+     */
+    @SuppressWarnings("deprecation")
+    public static void setBlock(Location l, int m, byte d) {
+        final Block b = l.getBlock();
         if (m < 0) {
             m += 256;
         }
@@ -147,13 +175,42 @@ public class TARDISBlockSetters {
         HashMap<String, Object> set = new HashMap<String, Object>();
         set.put("tardis_id", id);
         set.put("location", l);
-        String mat = b.getType().toString();
+        int bid = b.getTypeId();
         byte data = b.getData();
-        set.put("block", mat);
+        set.put("block", bid);
         set.put("data", data);
         set.put("police_box", 1);
         qf.doInsert("blocks", set);
         plugin.getGeneralKeeper().getProtectBlockMap().put(l, id);
+        // set the block
+        b.setType(m);
+        b.setData(d, true);
+    }
+
+    /**
+     * Sets a block to the specified type and data and remembers its location,
+     * typeId and data.
+     *
+     * @param b the block to set and remember
+     * @param m the typeId to set the block to.
+     * @param d the data bit to set the block to.
+     * @param id the TARDIS this block belongs to.
+     * @param type the police_box type (0 = interior, 1 = police box, 2 = beacon
+     * up block)
+     */
+    @SuppressWarnings("deprecation")
+    public static void setBlockAndRemember(Block b, Material m, byte d, int id, int type) {
+        // save the block location so that we can restore it (if it wasn't air)!
+        String l = b.getLocation().toString();
+        HashMap<String, Object> set = new HashMap<String, Object>();
+        set.put("tardis_id", id);
+        set.put("location", l);
+        int bid = b.getTypeId();
+        byte data = b.getData();
+        set.put("block", bid);
+        set.put("data", data);
+        set.put("police_box", type);
+        new QueryFactory(TARDIS.plugin).doInsert("blocks", set);
         // set the block
         b.setType(m);
         b.setData(d, true);
@@ -167,13 +224,11 @@ public class TARDISBlockSetters {
      * @param x the x coordinate of the block.
      * @param y the y coordinate of the block.
      * @param z the z coordinate of the block.
-     * @param m the typeId to set the block to.
-     * @param d the data bit to set the block to.
      * @param id the TARDIS this block belongs to.
      * @param portal whether a chest can be in the portal block location
      */
     @SuppressWarnings("deprecation")
-    public void setUnderDoorBlock(World w, int x, int y, int z, int m, byte d, int id, boolean portal) {
+    public void setUnderDoorBlock(World w, int x, int y, int z, int id, boolean portal) {
         // List of blocks that a door cannot be placed on
         List<Integer> ids = plugin.getBlocksConfig().getIntegerList("under_door_blocks");
         if (portal) {
@@ -194,8 +249,7 @@ public class TARDISBlockSetters {
             qf.doInsert("blocks", set);
             plugin.getGeneralKeeper().getProtectBlockMap().put(l, id);
             // set the block
-            b.setTypeId(m);
-            b.setData(d, true);
+            b.setType(Material.BARRIER);
         }
     }
 }

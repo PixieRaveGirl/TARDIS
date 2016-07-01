@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import me.eccentric_nz.TARDIS.TARDIS;
+import org.apache.commons.lang.math.NumberUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -46,6 +47,8 @@ public class TARDISConfiguration {
     private FileConfiguration blocks_config = null;
     private FileConfiguration rooms_config = null;
     private FileConfiguration signs_config = null;
+    private FileConfiguration chameleon_config = null;
+    private FileConfiguration planets_config = null;
     private File configFile = null;
     HashMap<String, String> strOptions = new HashMap<String, String>();
     HashMap<String, Integer> intOptions = new HashMap<String, Integer>();
@@ -58,6 +61,8 @@ public class TARDISConfiguration {
     HashMap<String, Double> artronDoubleOptions = new HashMap<String, Double>();
     HashMap<String, Integer> artronIntOptions = new HashMap<String, Integer>();
     HashMap<String, List<String>> signListOptions = new HashMap<String, List<String>>();
+    HashMap<String, String> chameleonOptions = new HashMap<String, String>();
+    List<String> removeOptions = new ArrayList<String>();
 
     public TARDISConfiguration(TARDIS plugin) {
         this.plugin = plugin;
@@ -67,7 +72,11 @@ public class TARDISConfiguration {
         this.blocks_config = plugin.getBlocksConfig();
         this.rooms_config = plugin.getRoomsConfig();
         this.signs_config = plugin.getSigns();
+        this.chameleon_config = plugin.getChameleonGuis();
+        this.planets_config = plugin.getPlanetsConfig();
         // boolean
+        boolOptions.put("abandon.enabled", true);
+        boolOptions.put("abandon.reduce_count", true);
         boolOptions.put("allow.3d_doors", false);
         boolOptions.put("allow.achievements", true);
         boolOptions.put("allow.all_blocks", false);
@@ -78,8 +87,9 @@ public class TARDISConfiguration {
         boolOptions.put("allow.hads", true);
         boolOptions.put("allow.invisibility", true);
         boolOptions.put("allow.mob_farming", true);
+        boolOptions.put("allow.perception_filter", true);
         boolOptions.put("allow.player_difficulty", true);
-        boolOptions.put("allow.power_down", false);
+        boolOptions.put("allow.power_down", true);
         boolOptions.put("allow.power_down_on_quit", false);
         boolOptions.put("allow.sfx", true);
         boolOptions.put("allow.spawn_eggs", true);
@@ -113,11 +123,13 @@ public class TARDISConfiguration {
         boolOptions.put("growth.rooms_require_blocks", false);
         boolOptions.put("junk.enabled", true);
         boolOptions.put("junk.particles", true);
-        boolOptions.put("police_box.materialise", true);
+//        boolOptions.put("police_box.materialise", true);
         boolOptions.put("police_box.name_tardis", false);
         boolOptions.put("police_box.set_biome", true);
         boolOptions.put("preferences.nerf_pistons.enabled", false);
         boolOptions.put("preferences.nerf_pistons.only_tardis_worlds", true);
+        boolOptions.put("preferences.no_creative_condense", false);
+        boolOptions.put("preferences.open_door_policy", false);
         boolOptions.put("preferences.render_entities", false);
         boolOptions.put("preferences.respect_factions", true);
         boolOptions.put("preferences.respect_grief_prevention", true);
@@ -138,6 +150,7 @@ public class TARDISConfiguration {
         boolOptions.put("travel.include_default_world", false);
         boolOptions.put("travel.land_on_water", true);
         boolOptions.put("travel.nether", false);
+        boolOptions.put("travel.no_destination_malfunctions", true);
         boolOptions.put("travel.per_world_perms", false);
         boolOptions.put("travel.terminal.redefine", false);
         boolOptions.put("travel.the_end", false);
@@ -161,6 +174,8 @@ public class TARDISConfiguration {
         roomBoolOptions.put("rooms.HARMONY.user", false);
         roomBoolOptions.put("rooms.HUTCH.enabled", true);
         roomBoolOptions.put("rooms.HUTCH.user", false);
+        roomBoolOptions.put("rooms.IGLOO.enabled", true);
+        roomBoolOptions.put("rooms.IGLOO.user", false);
         roomBoolOptions.put("rooms.KITCHEN.enabled", true);
         roomBoolOptions.put("rooms.KITCHEN.user", false);
         roomBoolOptions.put("rooms.LAZARUS.enabled", true);
@@ -192,7 +207,7 @@ public class TARDISConfiguration {
         roomBoolOptions.put("rooms.ZERO.enabled", true);
         roomBoolOptions.put("rooms.ZERO.user", false);
         // boolean
-        artronBoolOptions.put("artron_furnace.particles", true);
+        artronBoolOptions.put("artron_furnace.particles", false);
         artronBoolOptions.put("artron_furnace.set_biome", true);
         // double
         artronDoubleOptions.put("artron_furnace.burn_time", 0.5);
@@ -218,6 +233,13 @@ public class TARDISConfiguration {
         artronIntOptions.put("siege_deplete", 100);
         artronIntOptions.put("siege_ticks", 1500);
         artronIntOptions.put("siege_transfer", 10);
+        artronIntOptions.put("sonic_generator.standard", 10);
+        artronIntOptions.put("sonic_generator.bio", 10);
+        artronIntOptions.put("sonic_generator.diamond", 10);
+        artronIntOptions.put("sonic_generator.emerald", 10);
+        artronIntOptions.put("sonic_generator.redstone", 10);
+        artronIntOptions.put("sonic_generator.painter", 10);
+        artronIntOptions.put("sonic_generator.ignite", 10);
         artronIntOptions.put("standby", 5);
         artronIntOptions.put("standby_time", 6000);
         artronIntOptions.put("the_end_min", 5500);
@@ -226,8 +248,10 @@ public class TARDISConfiguration {
         artronIntOptions.put("upgrades.ars", 5000);
         artronIntOptions.put("upgrades.bigger", 7500);
         artronIntOptions.put("upgrades.budget", 5000);
+        artronIntOptions.put("upgrades.coral", 8000);
         artronIntOptions.put("upgrades.deluxe", 10000);
         artronIntOptions.put("upgrades.eleventh", 10000);
+        artronIntOptions.put("upgrades.ender", 5000);
         artronIntOptions.put("upgrades.master", 10000);
         artronIntOptions.put("upgrades.plank", 5000);
         artronIntOptions.put("upgrades.pyramid", 5000);
@@ -259,10 +283,7 @@ public class TARDISConfiguration {
         intOptions.put("growth.rooms_condenser_percent", 100);
         intOptions.put("junk.return", -1);
         intOptions.put("police_box.confirm_timeout", 15);
-        intOptions.put("police_box.platform_data", 8);
-        intOptions.put("police_box.platform_id", 35);
         intOptions.put("police_box.rebuild_cooldown", 10000);
-        intOptions.put("police_box.tardis_lamp", 50);
         intOptions.put("police_box.wall_data", 11);
         intOptions.put("police_box.wall_id", 35);
         intOptions.put("preferences.freeze_cooldown", 60);
@@ -273,17 +294,19 @@ public class TARDISConfiguration {
         intOptions.put("preferences.malfunction_end", 3);
         intOptions.put("preferences.malfunction_nether", 3);
         intOptions.put("preferences.sfx_volume", 10);
+        intOptions.put("preferences.spawn_limit", 10);
         intOptions.put("siege.breeding", 0);
         intOptions.put("siege.growth", 0);
         intOptions.put("travel.grace_period", 10);
         intOptions.put("travel.manual_flight_delay", 60);
         intOptions.put("travel.random_attempts", 30);
+        intOptions.put("travel.random_circuit.x", 5000);
+        intOptions.put("travel.random_circuit.z", 5000);
         intOptions.put("travel.terminal_step", 1);
         intOptions.put("travel.timeout", 5);
         intOptions.put("travel.timeout_height", 135);
-        intOptions.put("travel.tp_radius", 256);
-        intOptions.put("travel.random_circuit.x", 5000);
-        intOptions.put("travel.random_circuit.z", 5000);
+        intOptions.put("travel.tp_radius", 500);
+        intOptions.put("travel.max_distance", 29999983);
         roomIntOptions.put("rooms.ANTIGRAVITY.cost", 625);
         roomIntOptions.put("rooms.ANTIGRAVITY.offset", -4);
         roomIntOptions.put("rooms.ARBORETUM.cost", 325);
@@ -304,6 +327,8 @@ public class TARDISConfiguration {
         roomIntOptions.put("rooms.HARMONY.offset", -4);
         roomIntOptions.put("rooms.HUTCH.cost", 450);
         roomIntOptions.put("rooms.HUTCH.offset", -4);
+        roomIntOptions.put("rooms.IGLOO.cost", 650);
+        roomIntOptions.put("rooms.IGLOO.offset", -4);
         roomIntOptions.put("rooms.KITCHEN.cost", 450);
         roomIntOptions.put("rooms.KITCHEN.offset", -4);
         roomIntOptions.put("rooms.LAZARUS.cost", 750);
@@ -341,6 +366,7 @@ public class TARDISConfiguration {
         strOptions.put("creation.default_world_name", "TARDIS_TimeVortex");
         strOptions.put("creation.gamemode", "survival");
         strOptions.put("police_box.default_preset", "NEW");
+        strOptions.put("police_box.tardis_lamp", "REDSTONE_LAMP_OFF");
         strOptions.put("police_box.sign_colour", "WHITE");
         strOptions.put("preferences.default_key", "eleventh");
         strOptions.put("preferences.default_sonic", "eleventh");
@@ -349,6 +375,7 @@ public class TARDISConfiguration {
         strOptions.put("preferences.language", "en");
         strOptions.put("preferences.respect_towny", "nation");
         strOptions.put("preferences.respect_worldguard", "build");
+        strOptions.put("preferences.vortex_fall", "kill");
         strOptions.put("preferences.wand", "BONE");
         strOptions.put("storage.database", "sqlite");
         strOptions.put("storage.mysql.url", "mysql://localhost:3306/TARDIS");
@@ -369,6 +396,7 @@ public class TARDISConfiguration {
         roomStrOptions.put("rooms.GREENHOUSE.seed", "MELON_BLOCK");
         roomStrOptions.put("rooms.HARMONY.seed", "BRICK_STAIRS");
         roomStrOptions.put("rooms.HUTCH.seed", "LOG_2");
+        roomStrOptions.put("rooms.IGLOO.seed", "PACKED_ICE");
         roomStrOptions.put("rooms.KITCHEN.seed", "PUMPKIN");
         roomStrOptions.put("rooms.LAZARUS.seed", "FURNACE");
         roomStrOptions.put("rooms.LIBRARY.seed", "ENCHANTMENT_TABLE");
@@ -385,6 +413,12 @@ public class TARDISConfiguration {
         roomStrOptions.put("rooms.WORKSHOP.seed", "NETHER_BRICK");
         roomStrOptions.put("rooms.ZERO.seed", "WOOD_BUTTON");
         signListOptions.put("junk", Arrays.asList("Destination"));
+        chameleonOptions.put("USE_PREV", "Use last saved construct");
+
+        removeOptions.add("creation.materialise");
+        removeOptions.add("police_box.platform_data");
+        removeOptions.add("police_box.platform_id");
+        removeOptions.add("rooms.FIRST");
     }
 
     /**
@@ -445,14 +479,19 @@ public class TARDISConfiguration {
             if (!config.isConfigurationSection("rechargers")) {
                 plugin.getConfig().createSection("rechargers");
             }
-            if (config.contains("rooms.FIRST")) {
-                plugin.getConfig().set("rooms.FIRST", null);
-            }
-            if (config.contains("creation.materialise")) {
-                plugin.getConfig().set("creation.materialise", null);
+            for (String remove : removeOptions) {
+                plugin.getConfig().set(remove, null);
             }
             if (config.contains("difficulty") && config.getString("difficulty").equals("normal")) {
                 plugin.getConfig().set("difficulty", "hard");
+            }
+            if (config.contains("police_box.tardis_lamp") && NumberUtils.isNumber(config.getString("police_box.tardis_lamp"))) {
+                String setlamp = "REDSTONE_LAMP_OFF";
+                int lampint = config.getInt("police_box.tardis_lamp");
+                if (lampint != 50) {
+                    setlamp = Material.getMaterial(lampint).toString();
+                }
+                plugin.getConfig().set("police_box.tardis_lamp", setlamp);
             }
             if (i > 0) {
                 plugin.getConsole().sendMessage(plugin.getPluginName() + "Added " + ChatColor.AQUA + i + ChatColor.RESET + " new items to config");
@@ -464,6 +503,7 @@ public class TARDISConfiguration {
         checkBlocksConfig();
         checkRoomsConfig();
         checkSignsConfig();
+        checkChameleonConfig();
         plugin.saveConfig();
     }
 
@@ -577,9 +617,16 @@ public class TARDISConfiguration {
                 blocks_config.set("tardis_blocks", tblocs);
                 i++;
             }
+            if (!tblocs.contains("NETHER_WART_BLOCK")) {
+                tblocs.add("NETHER_WART_BLOCK");
+                tblocs.add("RED_NETHER_BRICK");
+                tblocs.add("BONE_BLOCK");
+                blocks_config.set("tardis_blocks", tblocs);
+                i++;
+            }
         }
         if (!blocks_config.contains("chameleon_blocks")) {
-            List<Integer> CHAM_BLOCKS = Arrays.asList(1, 3, 4, 5, 7, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 35, 41, 42, 45, 46, 47, 48, 49, 56, 57, 58, 73, 79, 80, 82, 84, 86, 87, 88, 89, 91, 98, 99, 100, 103, 110, 112, 121, 123, 129, 133, 155, 159, 161, 162, 170, 172, 173, 174);
+            List<Integer> CHAM_BLOCKS = Arrays.asList(1, 3, 4, 5, 7, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 35, 41, 42, 45, 46, 47, 48, 49, 56, 57, 58, 73, 79, 80, 82, 84, 86, 87, 88, 89, 91, 95, 98, 99, 100, 103, 110, 112, 121, 123, 129, 133, 155, 159, 161, 162, 165, 168, 170, 172, 173, 174, 201, 202, 206, 214, 215, 216);
             blocks_config.set("chameleon_blocks", CHAM_BLOCKS);
             i++;
         } else {
@@ -601,6 +648,23 @@ public class TARDISConfiguration {
             }
             if (!cblocs.contains(179)) {
                 cblocs.add(179);
+                blocks_config.set("chameleon_blocks", cblocs);
+                i++;
+            }
+            if (!cblocs.contains(95)) {
+                cblocs.add(95);
+                cblocs.add(165);
+                cblocs.add(168);
+                cblocs.add(201);
+                cblocs.add(202);
+                cblocs.add(206);
+                blocks_config.set("chameleon_blocks", cblocs);
+                i++;
+            }
+            if (!cblocs.contains(214)) {
+                cblocs.add(214);
+                cblocs.add(215);
+                cblocs.add(216);
                 blocks_config.set("chameleon_blocks", cblocs);
                 i++;
             }
@@ -641,6 +705,11 @@ public class TARDISConfiguration {
             }
             if (!udblocs.contains(171)) {
                 udblocs.add(171);
+                blocks_config.set("under_door_blocks", udblocs);
+                i++;
+            }
+            if (!udblocs.contains(208)) {
+                udblocs.add(208);
                 blocks_config.set("under_door_blocks", udblocs);
                 i++;
             }
@@ -725,6 +794,41 @@ public class TARDISConfiguration {
             }
         } catch (IOException io) {
             plugin.debug("Could not save signs.yml, " + io.getMessage());
+        }
+    }
+
+    public void checkChameleonConfig() {
+        if (chameleon_config.getString("SAVE").equals("Save construction")) {
+            chameleon_config.set("SAVE", "Save construct");
+        }
+        int i = 0;
+        for (Map.Entry<String, String> entry : chameleonOptions.entrySet()) {
+            if (!chameleon_config.contains(entry.getKey())) {
+                chameleon_config.set(entry.getKey(), entry.getValue());
+                i++;
+            }
+        }
+        try {
+            String chameleonPath = plugin.getDataFolder() + File.separator + "language" + File.separator + "chameleon_guis.yml";
+            chameleon_config.save(new File(chameleonPath));
+            if (i > 0) {
+                plugin.getConsole().sendMessage(plugin.getPluginName() + "Added " + ChatColor.AQUA + i + ChatColor.RESET + " new items to chameleon_guis.yml");
+            }
+        } catch (IOException io) {
+            plugin.debug("Could not save chameleon_guis.yml, " + io.getMessage());
+        }
+    }
+
+    public void checkPlanetsConfig() {
+        if (!planets_config.contains("planets.Skaro.flying_daleks")) {
+            planets_config.set("planets.Skaro.flying_daleks", true);
+            try {
+                String planetsPath = plugin.getDataFolder() + File.separator + "planets.yml";
+                planets_config.save(new File(planetsPath));
+                plugin.getConsole().sendMessage(plugin.getPluginName() + "Added " + ChatColor.AQUA + "1" + ChatColor.RESET + " new item to planets.yml");
+            } catch (IOException io) {
+                plugin.debug("Could not save chameleon_guis.yml, " + io.getMessage());
+            }
         }
     }
 }

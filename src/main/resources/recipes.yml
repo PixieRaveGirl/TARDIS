@@ -210,16 +210,29 @@ shaped:
             D: DIAMOND
             P: 'MAP:1978'
             E: EMERALD
-            W: 'POTION:8206'
+            W: 'POTION'
         hard_shape: -D-,P-E,-W-
         hard_ingredients:
             D: DIAMOND
             P: 'MAP:1978'
             E: EMERALD
-            W: 'POTION:8270'
+            W: 'POTION'
         result: 'MAP:1981'
         amount: 1
         lore: "Uses left~5"
+    TARDIS Telepathic Circuit:
+        easy_shape: -S-,SES,-S-
+        easy_ingredients:
+            S: SLIME_BALL
+            E: EMERALD
+        hard_shape: -S-,SPS,ESE
+        hard_ingredients:
+            S: SLIME_BALL
+            P: 'POTION'
+            E: EMERALD
+        result: 'DAYLIGHT_DETECTOR'
+        amount: 1
+        lore: "Allow companions to~use TARDIS commands"
     Perception Filter:
         easy_shape: S-S,-S-,RGC
         easy_ingredients:
@@ -302,6 +315,22 @@ shaped:
             I: IRON_INGOT
             O: 'MAP:1967'
         result: BLAZE_ROD
+        amount: 1
+        lore: ""
+    Sonic Generator:
+        easy_shape: GRG,-F-,-S-
+        easy_ingredients:
+            G: GOLD_NUGGET
+            R: REDSTONE
+            F: FLOWER_POT_ITEM
+            S: BLAZE_ROD
+        hard_shape: GRG,-F-,-S-
+        hard_ingredients:
+            G: GOLD_INGOT
+            R: REDSTONE_BLOCK
+            F: FLOWER_POT_ITEM
+            S: BLAZE_ROD
+        result: FLOWER_POT_ITEM
         amount: 1
         lore: ""
     Server Admin Circuit:
@@ -706,6 +735,78 @@ shaped:
         result: WATCH
         amount: 1
         lore: ""
+    TARDIS Biome Reader:
+        easy_shape: ---,-C-,SDT
+        easy_ingredients:
+            C: 'MAP:1972'
+            S: SAND
+            D: DIRT
+            T: STONE
+        hard_shape: -C-,SDT,LWN
+        hard_ingredients:
+            C: 'MAP:1972'
+            S: SAND
+            D: DIRT
+            T: STONE
+            L: CLAY
+            W: SNOW_BLOCK
+            N: NETHERRACK
+        result: CLAY_BRICK
+        amount: 1
+        lore: ""
+    Acid Battery:
+        easy_shape: -A-,ARA,-A-
+        easy_ingredients:
+            A: WATER_BUCKET
+            R: REDSTONE
+        hard_shape: -A-,ARA,-A-
+        hard_ingredients:
+            A: WATER_BUCKET
+            R: REDSTONE_BLOCK
+        result: NETHER_BRICK_ITEM
+        amount: 1
+        lore: ""
+    Rift Circuit:
+        easy_shape: -D-,DND,-D-
+        easy_ingredients:
+            D: DIAMOND
+            N: NETHER_STAR
+        hard_shape: -D-,DND,-D-
+        hard_ingredients:
+            D: DIAMOND
+            N: NETHER_STAR
+        result: 'MAP:1983'
+        amount: 1
+        lore: ""
+    Rift Manipulator:
+        easy_shape: -A-,ACA,RAR
+        easy_ingredients:
+            A: NETHER_BRICK_ITEM
+            C: 'MAP:1983'
+            R: REDSTONE
+        hard_shape: -A-,ACA,NAN
+        hard_ingredients:
+            A: NETHER_BRICK_ITEM
+            C: 'MAP:1983'
+            N: NETHER_STAR
+        result: BEACON
+        amount: 1
+        lore: ""
+    Rust Plague Sword:
+        easy_shape: RIR,RIR,-S-
+        easy_ingredients:
+            R: LAVA_BUCKET
+            I: IRON_INGOT
+            S: STICK
+        hard_shape: RIR,RIR,DSD
+        hard_ingredients:
+            R: LAVA_BUCKET
+            I: IRON_INGOT
+            D: DIAMOND
+            S: STICK
+        result: IRON_SWORD
+        amount: 1
+        lore: Dalek Virus Dispenser
 # -------------------
 # these are the shapeless recipes
 # -------------------
