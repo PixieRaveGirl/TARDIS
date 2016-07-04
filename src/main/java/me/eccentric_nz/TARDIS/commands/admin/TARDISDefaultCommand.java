@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 eccentric_nz
+ * Copyright (C) 2016 eccentric_nz
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ public class TARDISDefaultCommand {
         this.plugin = plugin;
     }
 
-    public boolean setSonic(CommandSender sender, String[] args) {
+    public boolean setDefaultItem(CommandSender sender, String[] args) {
         String which = args[0].toLowerCase();
         int count = args.length;
         StringBuilder buf = new StringBuilder();
