@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 eccentric_nz
+ * Copyright (C) 2014 eccentric_nz
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@ import me.eccentric_nz.TARDIS.ARS.TARDISARSInventory;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.advanced.TARDISCircuitChecker;
 import me.eccentric_nz.TARDIS.advanced.TARDISSerializeInventory;
-import me.eccentric_nz.TARDIS.api.event.TARDISZeroRoomEnterEvent;
-import me.eccentric_nz.TARDIS.api.event.TARDISZeroRoomExitEvent;
 import me.eccentric_nz.TARDIS.control.TARDISControlInventory;
 import me.eccentric_nz.TARDIS.control.TARDISFastReturnButton;
 import me.eccentric_nz.TARDIS.control.TARDISInfoMenuButton;
@@ -311,7 +309,6 @@ public class TARDISButtonListener implements Listener {
                                     // exit zero room
                                     plugin.getTrackerKeeper().getZeroRoomOccupants().remove(player.getUniqueId());
                                     plugin.getGeneralKeeper().getRendererListener().transmat(player);
-                                    plugin.getPM().callEvent(new TARDISZeroRoomExitEvent(player, id));
                                     break;
                                 case 20:
                                     // toggle black wool blocks behind door
@@ -367,7 +364,7 @@ public class TARDISButtonListener implements Listener {
         }
     }
 
-    private void doZero(int level, final Player player, String z, final int id, QueryFactory qf) {
+    private void doZero(int level, final Player player, String z, int id, QueryFactory qf) {
         int zero_amount = plugin.getArtronConfig().getInt("zero");
         if (level < zero_amount) {
             TARDISMessage.send(player, "NOT_ENOUGH_ZERO_ENERGY");
@@ -380,7 +377,6 @@ public class TARDISButtonListener implements Listener {
                 @Override
                 public void run() {
                     new TARDISExteriorRenderer(plugin).transmat(player, COMPASS.SOUTH, zero);
-                    plugin.getPM().callEvent(new TARDISZeroRoomEnterEvent(player, id));
                 }
             }, 20L);
             plugin.getTrackerKeeper().getZeroRoomOccupants().add(player.getUniqueId());

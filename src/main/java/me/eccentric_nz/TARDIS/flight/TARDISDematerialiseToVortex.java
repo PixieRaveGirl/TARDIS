@@ -19,7 +19,6 @@ package me.eccentric_nz.TARDIS.flight;
 import java.util.HashMap;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.api.event.TARDISDematerialisationEvent;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
 import me.eccentric_nz.TARDIS.database.ResultSetNextLocation;
@@ -101,7 +100,6 @@ public class TARDISDematerialiseToVortex implements Runnable {
                 Location exit = new Location(rsn.getWorld(), rsn.getX(), rsn.getY(), rsn.getZ());
                 dd.setFromToLocation(exit);
             }
-            plugin.getPM().callEvent(new TARDISDematerialisationEvent(player, tardis, l));
             if (!hidden && !plugin.getTrackerKeeper().getReset().contains(resetw)) {
                 HashMap<String, Object> wherek = new HashMap<String, Object>();
                 wherek.put("uuid", uuid.toString());

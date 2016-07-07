@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
-import me.eccentric_nz.TARDIS.api.event.TARDISEnterEvent;
-import me.eccentric_nz.TARDIS.api.event.TARDISExitEvent;
 import me.eccentric_nz.TARDIS.chatGUI.TARDISUpdateChatGUI;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetDoors;
@@ -126,7 +124,6 @@ public class TARDISDoorListener {
                     }
                 }
                 if (exit) {
-                    plugin.getPM().callEvent(new TARDISExitEvent(p, to));
                     // give some artron energy
                     QueryFactory qf = new QueryFactory(plugin);
                     // add energy to player
@@ -146,7 +143,6 @@ public class TARDISDoorListener {
                         plugin.getTrackerKeeper().getEjecting().remove(uuid);
                     }
                 } else {
-                    plugin.getPM().callEvent(new TARDISEnterEvent(p, from));
                     if (p.isPlayerTimeRelative()) {
                         setTemporalLocation(p, -1);
                     }

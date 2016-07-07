@@ -20,8 +20,6 @@ import java.util.HashMap;
 import java.util.UUID;
 import me.eccentric_nz.TARDIS.TARDIS;
 import me.eccentric_nz.TARDIS.achievement.TARDISAchievementFactory;
-import me.eccentric_nz.TARDIS.api.event.TARDISMalfunctionEvent;
-import me.eccentric_nz.TARDIS.api.event.TARDISMaterialisationEvent;
 import me.eccentric_nz.TARDIS.builders.BuildData;
 import me.eccentric_nz.TARDIS.database.QueryFactory;
 import me.eccentric_nz.TARDIS.database.ResultSetCurrentLocation;
@@ -83,7 +81,7 @@ public class TARDISMaterialseFromVortex implements Runnable {
         wherei.put("tardis_id", id);
         ResultSetTardis rs = new ResultSetTardis(plugin, wherei, "", false, 2);
         if (rs.resultSet()) {
-            final Tardis tardis = rs.getTardis();
+            Tardis tardis = rs.getTardis();
             boolean cham = tardis.isChamele_on();
             // get current location for back
             HashMap<String, Object> wherecu = new HashMap<String, Object>();
@@ -116,7 +114,6 @@ public class TARDISMaterialseFromVortex implements Runnable {
                             TARDISMessage.send(player, "Q_FLY");
                             plugin.getTrackerKeeper().getHasDestination().remove(id);
                         }
-                        plugin.getPM().callEvent(new TARDISMalfunctionEvent(player, tardis, exit));
                         // set beacon colour to red
                         if (!tardis.getBeacon().isEmpty()) {
                             setBeaconUpBlock(tardis.getBeacon(), id);
@@ -216,7 +213,6 @@ public class TARDISMaterialseFromVortex implements Runnable {
                             BuildData b_data = plugin.getTrackerKeeper().getFlightData().get(uuid);
                             Location final_location = b_data.getLocation();
                             final Location l = new Location(rscl.getWorld(), rscl.getX(), rscl.getY(), rscl.getZ());
-                            plugin.getPM().callEvent(new TARDISMaterialisationEvent(player, tardis, final_location));
                             plugin.getPresetBuilder().buildPreset(b_data);
                             if (!mine_sound) {
                                 if (!preset.equals(PRESET.JUNK_MODE)) {
