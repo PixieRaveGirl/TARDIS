@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 eccentric_nz
+ * Copyright (C) 2016 eccentric_nz
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -228,6 +228,15 @@ public class TARDISPrefsMenuListener implements Listener {
                             QueryFactory qf = new QueryFactory(plugin);
                             Tardis tardis = rsp.getTardis();
                             String current = tardis.getPreset().toString();
+                            // make sure is opposite
+                            if (current.equals("JUNK_MODE") && !bool) {
+                                TARDISMessage.send(p, "JUNK_ALREADY_ON");
+                                return;
+                            }
+                            if (!current.equals("JUNK_MODE") && bool) {
+                                TARDISMessage.send(p, "JUNK_ALREADY_OFF");
+                                return;
+                            }
                             int id = tardis.getTardis_id();
                             String chameleon = tardis.getChameleon();
                             String cham_set;

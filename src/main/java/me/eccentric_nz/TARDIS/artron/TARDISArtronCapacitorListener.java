@@ -252,15 +252,17 @@ public class TARDISArtronCapacitorListener implements Listener {
                                         if (abandoned) {
                                             // transfer ownership to the player who clicked
                                             pu = qf.claimTARDIS(player, id);
-                                            if (pu) {
-                                                new TARDISDoorCloser(plugin, player.getUniqueId(), id).closeDoors();
-                                                TARDISMessage.send(player, "ABANDON_CLAIMED");
-                                            }
-                                            if (plugin.getConfig().getBoolean("police_box.name_tardis")) {
-                                                HashMap<String, Object> wherec = new HashMap<String, Object>();
-                                                wherec.put("tardis_id", id);
-                                                ResultSetCurrentLocation rscl = new ResultSetCurrentLocation(plugin, wherec);
-                                                if (rsc.resultSet()) {
+                                            // make sure player is added as owner of interiorWorldGuard region
+                                            plugin.getWorldGuardUtils().updateRegionForClaim(block.getLocation(), player.getUniqueId());
+                                            HashMap<String, Object> wherec = new HashMap<String, Object>();
+                                            wherec.put("tardis_id", id);
+                                            ResultSetCurrentLocation rscl = new ResultSetCurrentLocation(plugin, wherec);
+                                            if (rsc.resultSet()) {
+                                                if (pu) {
+                                                    new TARDISDoorCloser(plugin, player.getUniqueId(), id).closeDoors();
+                                                    TARDISMessage.send(player, "ABANDON_CLAIMED");
+                                                }
+                                                if (plugin.getConfig().getBoolean("police_box.name_tardis")) {
                                                     PRESET preset = rs.getTardis().getPreset();
                                                     Location current = new Location(rscl.getWorld(), rscl.getX(), rscl.getY(), rscl.getZ());
                                                     Sign sign = getSign(current, rscl.getDirection(), preset);

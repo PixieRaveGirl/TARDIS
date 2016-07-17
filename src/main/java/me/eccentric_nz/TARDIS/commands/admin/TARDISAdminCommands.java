@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 eccentric_nz
+ * Copyright (C) 2016 eccentric_nz
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -336,7 +336,7 @@ public class TARDISAdminCommands implements CommandExecutor {
                     return new TARDISSetMaterialCommand(plugin).setConfigMaterial(sender, args);
                 }
                 if (first.equals("default_key") || first.equals("default_sonic")) {
-                    return new TARDISDefaultCommand(plugin).setSonic(sender, args);
+                    return new TARDISDefaultCommand(plugin).setDefaultItem(sender, args);
                 }
                 if (first.equals("default_world_name")) {
                     return new TARDISDefaultWorldNameCommand(plugin).setName(sender, args);

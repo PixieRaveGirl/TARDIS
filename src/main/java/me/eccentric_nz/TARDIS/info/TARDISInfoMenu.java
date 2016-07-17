@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 eccentric_nz
+ * Copyright (C) 2016 eccentric_nz
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -167,7 +167,7 @@ public enum TARDISInfoMenu {
     WAR("TIS|TARDIS Types|War", "TYPES", "W"),
     PYRAMID("TIS|TARDIS Types|Pyramid", "TYPES", "y"),
     MASTER("TIS|TARDIS Types|Master", "TYPES", "M"),
-    ENDER("TIS|TARDIS Types|Ender", "TYPES", "E"),
+    ENDER("TIS|TARDIS Types|Ender", "TYPES", "n"),
     CORAL("TIS|TARDIS Types|Coral", "TYPES", "o"),
     CUSTOM("TIS|TARDIS Types|Custom", "TYPES", "C"),
     ROOMS("TIS|Rooms", "TIS", "R"),

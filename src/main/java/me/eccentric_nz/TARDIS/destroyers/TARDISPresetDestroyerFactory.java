@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 eccentric_nz
+ * Copyright (C) 2016 eccentric_nz
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ public class TARDISPresetDestroyerFactory {
                 if (dd.isHide()) {
                     loops = 3;
                     TARDISSounds.playTARDISSound(dd.getLocation(), "tardis_takeoff_fast");
-                    if (plugin.getUtils().inTARDISWorld(dd.getPlayer().getPlayer())) {
+                    if (dd.getPlayer() != null && dd.getPlayer().getPlayer() != null && plugin.getUtils().inTARDISWorld(dd.getPlayer().getPlayer())) {
                         TARDISSounds.playTARDISSound(dd.getPlayer().getPlayer().getLocation(), "tardis_takeoff_fast");
                     }
                 } else if (preset.equals(PRESET.JUNK_MODE)) {
