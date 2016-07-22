@@ -1096,9 +1096,6 @@ public class TARDIS extends JavaPlugin {
         return presets;
     }
 
-//    public TARDISMultiverseInventoriesChecker getTMIChecker() {
-//        return TMIChecker;
-//    }
     public TARDISWalls getTardisWalls() {
         return tardisWalls;
     }
