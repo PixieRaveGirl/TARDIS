@@ -173,6 +173,8 @@ public class TARDISARSMethods {
             String config_path = TARDISARS.ARSFor(room).getActualName();
             List<String> lore = Arrays.asList("Cost: " + plugin.getRoomsConfig().getInt("rooms." + config_path + ".cost"));
             im.setLore(lore);
+        } else {
+            im.setLore(null);
         }
         is.setItemMeta(im);
         inv.setItem(slot, is);

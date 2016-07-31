@@ -182,7 +182,7 @@ public class TARDISARSListener extends TARDISARSMethods implements Listener {
                         }
                         scroll_start.put(uuid, startr);
                         for (int i = 0; i < 9; i++) {
-                            // setSlot(Inventory inv, int slot, int id, String room)
+                            // setSlot(Inventory inv, int slot, int id, String room, UUID uuid, boolean update)
                             setSlot(inv, (45 + i), room_ids.get(startr + i), room_names.get(startr + i), uuid, false);
                         }
                         break;
